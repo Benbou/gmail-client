@@ -53,6 +53,9 @@ export const accountsApi = {
 
     triggerSync: (id: string) =>
         api.post(`/accounts/sync/${id}`),
+
+    getLabels: (accountId: string) =>
+        api.get(`/accounts/${accountId}/labels`),
 };
 
 export const emailsApi = {
@@ -73,6 +76,59 @@ export const emailsApi = {
 
     delete: (id: string) =>
         api.delete(`/emails/${id}`),
+
+    // New endpoints for sending emails
+    send: (data: {
+        gmail_account_id: string;
+        to_emails: string[];
+        cc_emails?: string[];
+        bcc_emails?: string[];
+        subject: string;
+        body_html: string;
+        in_reply_to?: string;
+    }) => api.post('/emails/send', data),
+
+    schedule: (data: {
+        gmail_account_id: string;
+        to_emails: string[];
+        cc_emails?: string[];
+        bcc_emails?: string[];
+        subject: string;
+        body_html: string;
+        scheduled_at: string;
+        in_reply_to?: string;
+    }) => api.post('/emails/schedule', data),
+};
+
+export const draftsApi = {
+    list: (userId: string) =>
+        api.get('/drafts', { params: { userId } }),
+
+    get: (id: string) =>
+        api.get(`/drafts/${id}`),
+
+    create: (data: {
+        gmail_account_id: string;
+        to_emails?: string[];
+        cc_emails?: string[];
+        bcc_emails?: string[];
+        subject?: string;
+        body_html?: string;
+        body_text?: string;
+        in_reply_to?: string;
+    }) => api.post('/drafts', data),
+
+    update: (id: string, data: {
+        to_emails?: string[];
+        cc_emails?: string[];
+        bcc_emails?: string[];
+        subject?: string;
+        body_html?: string;
+        body_text?: string;
+    }) => api.patch(`/drafts/${id}`, data),
+
+    delete: (id: string) =>
+        api.delete(`/drafts/${id}`),
 };
 
 export const syncApi = {
@@ -84,4 +140,27 @@ export const syncApi = {
 
     getLogs: (accountId: string, limit = 10) =>
         api.get(`/sync/logs/${accountId}?limit=${limit}`),
+};
+
+export const labelsApi = {
+    list: (accountId: string) =>
+        api.get(`/labels?accountId=${accountId}`),
+
+    get: (id: string) =>
+        api.get(`/labels/${id}`),
+
+    create: (data: {
+        gmail_account_id: string;
+        name: string;
+        color?: string;
+    }) => api.post('/labels', data),
+
+    update: (id: string, data: {
+        name?: string;
+        color?: string;
+        is_visible?: boolean;
+    }) => api.patch(`/labels/${id}`, data),
+
+    delete: (id: string) =>
+        api.delete(`/labels/${id}`),
 };

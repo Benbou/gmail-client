@@ -109,6 +109,7 @@ export interface EmailListParams {
     page?: number;
     limit?: number;
     is_read?: boolean;
+    is_starred?: boolean;
     is_archived?: boolean;
     label_id?: string;
     search?: string;
