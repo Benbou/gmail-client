@@ -1,20 +1,30 @@
 import { Router, Response } from 'express';
 import { supabase } from '../services/supabase.js';
-import { AuthRequest } from '../middleware/auth.js';
+import { gmailSyncService } from '../services/gmail-sync.js';
+import { authenticate, AuthRequest } from '../middleware/auth.js';
+import { ApiError, asyncHandler } from '../lib/errors.js';
+import { createLogger } from '../lib/logger.js';
+import {
+    validate,
+    accountUpdateSchema,
+    accountIdParamSchema,
+    AccountUpdateBody,
+} from '../lib/validations.js';
 
+const logger = createLogger('accounts');
 const router = Router();
+
+// All account routes require authentication
+router.use(authenticate);
 
 /**
  * GET /api/accounts
  * List user's Gmail accounts
  */
-router.get('/', async (req: AuthRequest, res: Response) => {
-    try {
-        const userId = req.query.userId as string; // TODO: Get from JWT
-
-        if (!userId) {
-            return res.status(400).json({ error: 'userId is required' });
-        }
+router.get(
+    '/',
+    asyncHandler(async (req: AuthRequest, res: Response) => {
+        const userId = req.userId!;
 
         const { data: accounts, error } = await supabase
             .from('gmail_accounts')
@@ -23,64 +33,200 @@ router.get('/', async (req: AuthRequest, res: Response) => {
             .order('created_at', { ascending: false });
 
         if (error) {
-            console.error('Error fetching accounts:', error);
-            return res.status(500).json({ error: 'Failed to fetch accounts' });
+            logger.error({ error, userId }, 'Failed to fetch accounts');
+            throw ApiError.internal('Failed to fetch accounts');
         }
 
         res.json({ accounts });
-    } catch (error) {
-        console.error('List accounts error:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
+    })
+);
+
+/**
+ * GET /api/accounts/:id
+ * Get single account details
+ */
+router.get(
+    '/:id',
+    validate({ params: accountIdParamSchema }),
+    asyncHandler(async (req: AuthRequest, res: Response) => {
+        const { id } = req.params;
+        const userId = req.userId!;
+
+        const { data: account, error } = await supabase
+            .from('gmail_accounts')
+            .select('id, email, is_active, sync_enabled, last_sync_at, scopes, created_at')
+            .eq('id', id)
+            .eq('user_id', userId)
+            .single();
+
+        if (error || !account) {
+            throw ApiError.notFound('Gmail account');
+        }
+
+        res.json({ account });
+    })
+);
 
 /**
  * PATCH /api/accounts/:id
  * Update account settings
  */
-router.patch('/:id', async (req: AuthRequest, res: Response) => {
-    try {
+router.patch(
+    '/:id',
+    validate({ params: accountIdParamSchema, body: accountUpdateSchema }),
+    asyncHandler(async (req: AuthRequest, res: Response) => {
         const { id } = req.params;
-        const { sync_enabled, is_active } = req.body;
+        const userId = req.userId!;
+        const updates = req.body as AccountUpdateBody;
 
-        const updateData: any = {};
-        if (typeof sync_enabled === 'boolean') updateData.sync_enabled = sync_enabled;
-        if (typeof is_active === 'boolean') updateData.is_active = is_active;
+        // Verify ownership
+        const { data: existing } = await supabase
+            .from('gmail_accounts')
+            .select('id, user_id')
+            .eq('id', id)
+            .single();
+
+        if (!existing) {
+            throw ApiError.notFound('Gmail account');
+        }
+
+        if (existing.user_id !== userId) {
+            throw ApiError.forbidden('You do not have access to this account');
+        }
+
+        // Build update data
+        const updateData: Record<string, unknown> = {};
+        if (typeof updates.sync_enabled === 'boolean') updateData.sync_enabled = updates.sync_enabled;
+        if (typeof updates.is_active === 'boolean') updateData.is_active = updates.is_active;
 
         const { data: account, error } = await supabase
             .from('gmail_accounts')
             .update(updateData)
             .eq('id', id)
-            .select()
+            .select('id, email, is_active, sync_enabled, last_sync_at, created_at')
             .single();
 
         if (error) {
-            console.error('Error updating account:', error);
-            return res.status(500).json({ error: 'Failed to update account' });
+            logger.error({ error, accountId: id }, 'Failed to update account');
+            throw ApiError.internal('Failed to update account');
         }
 
+        logger.info({ userId, accountId: id, updates }, 'Account updated');
+
         res.json({ account });
-    } catch (error) {
-        console.error('Update account error:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
+    })
+);
 
 /**
- * POST /api/accounts/sync/:id
+ * POST /api/accounts/:id/sync
  * Trigger manual sync for account
  */
-router.post('/sync/:id', async (req: AuthRequest, res: Response) => {
-    try {
+router.post(
+    '/:id/sync',
+    validate({ params: accountIdParamSchema }),
+    asyncHandler(async (req: AuthRequest, res: Response) => {
         const { id } = req.params;
+        const userId = req.userId!;
+        const { syncType = 'delta' } = req.body;
 
-        // TODO: Trigger sync worker for this account
-        // For now, just return success
-        res.json({ message: 'Sync triggered', accountId: id });
-    } catch (error) {
-        console.error('Trigger sync error:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
+        // Verify ownership and get account details
+        const { data: account, error } = await supabase
+            .from('gmail_accounts')
+            .select('id, user_id, email, sync_enabled')
+            .eq('id', id)
+            .single();
+
+        if (error || !account) {
+            throw ApiError.notFound('Gmail account');
+        }
+
+        if (account.user_id !== userId) {
+            throw ApiError.forbidden('You do not have access to this account');
+        }
+
+        if (!account.sync_enabled) {
+            throw ApiError.badRequest('Sync is disabled for this account');
+        }
+
+        // Trigger sync in background
+        gmailSyncService
+            .syncAccount({ accountId: id, syncType })
+            .then(() => logger.info({ accountId: id }, 'Manual sync completed'))
+            .catch((err) => logger.error({ error: err, accountId: id }, 'Manual sync failed'));
+
+        logger.info({ userId, accountId: id, syncType }, 'Manual sync triggered');
+
+        res.json({
+            message: 'Sync started',
+            accountId: id,
+            email: account.email,
+        });
+    })
+);
+
+/**
+ * GET /api/accounts/:id/stats
+ * Get account statistics
+ */
+router.get(
+    '/:id/stats',
+    validate({ params: accountIdParamSchema }),
+    asyncHandler(async (req: AuthRequest, res: Response) => {
+        const { id } = req.params;
+        const userId = req.userId!;
+
+        // Verify ownership
+        const { data: account } = await supabase
+            .from('gmail_accounts')
+            .select('id, user_id')
+            .eq('id', id)
+            .single();
+
+        if (!account) {
+            throw ApiError.notFound('Gmail account');
+        }
+
+        if (account.user_id !== userId) {
+            throw ApiError.forbidden('You do not have access to this account');
+        }
+
+        // Get email counts
+        const { count: totalEmails } = await supabase
+            .from('emails')
+            .select('*', { count: 'exact', head: true })
+            .eq('gmail_account_id', id);
+
+        const { count: unreadEmails } = await supabase
+            .from('emails')
+            .select('*', { count: 'exact', head: true })
+            .eq('gmail_account_id', id)
+            .eq('is_read', false)
+            .eq('is_archived', false);
+
+        const { count: starredEmails } = await supabase
+            .from('emails')
+            .select('*', { count: 'exact', head: true })
+            .eq('gmail_account_id', id)
+            .eq('is_starred', true);
+
+        // Get last sync info
+        const { data: lastSync } = await supabase
+            .from('sync_logs')
+            .select('*')
+            .eq('gmail_account_id', id)
+            .order('started_at', { ascending: false })
+            .limit(1)
+            .single();
+
+        res.json({
+            stats: {
+                totalEmails: totalEmails || 0,
+                unreadEmails: unreadEmails || 0,
+                starredEmails: starredEmails || 0,
+                lastSync: lastSync || null,
+            },
+        });
+    })
+);
 
 export default router;
