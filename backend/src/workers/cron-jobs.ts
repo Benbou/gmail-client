@@ -2,17 +2,22 @@ import cron from 'node-cron';
 import { supabase } from '../services/supabase.js';
 import { gmailSyncService } from '../services/gmail-sync.js';
 import { refreshAccessToken } from '../services/gmail-oauth.js';
+import { gmailService } from '../services/gmail-service.js';
+import { encrypt, safeDecrypt } from '../lib/crypto.js';
+import { createLogger } from '../lib/logger.js';
+
+const logger = createLogger('cron-jobs');
 
 /**
  * Background worker for automatic email syncing
  * Runs every 2 minutes and syncs all active accounts
  */
 export function startSyncWorker() {
-    console.log('📅 Starting auto-sync worker (runs every 2 minutes)');
+    logger.info('Starting auto-sync worker (runs every 2 minutes)');
 
     cron.schedule('*/2 * * * *', async () => {
         try {
-            console.log('🔄 Running scheduled email sync...');
+            logger.debug('Running scheduled email sync...');
 
             // Get all active accounts with sync enabled
             const { data: accounts, error } = await supabase
@@ -22,16 +27,16 @@ export function startSyncWorker() {
                 .eq('sync_enabled', true);
 
             if (error) {
-                console.error('Error fetching accounts for sync:', error);
+                logger.error({ error }, 'Error fetching accounts for sync');
                 return;
             }
 
             if (!accounts || accounts.length === 0) {
-                console.log('No accounts to sync');
+                logger.debug('No accounts to sync');
                 return;
             }
 
-            console.log(`Syncing ${accounts.length} accounts...`);
+            logger.info({ count: accounts.length }, 'Syncing accounts');
 
             // Sync each account in parallel
             const syncPromises = accounts.map((account) =>
@@ -41,15 +46,15 @@ export function startSyncWorker() {
                         syncType: 'delta',
                     })
                     .catch((err) => {
-                        console.error(`Sync failed for ${account.email}:`, err.message);
+                        logger.error({ email: account.email, error: err.message }, 'Sync failed');
                     })
             );
 
             await Promise.allSettled(syncPromises);
 
-            console.log('✅ Scheduled sync completed');
+            logger.debug('Scheduled sync completed');
         } catch (error) {
-            console.error('Sync worker error:', error);
+            logger.error({ error }, 'Sync worker error');
         }
     });
 }
@@ -59,11 +64,11 @@ export function startSyncWorker() {
  * Runs every 5 minutes to proactively refresh expiring tokens
  */
 export function startTokenRefreshWorker() {
-    console.log('🔑 Starting token refresh worker (runs every 5 minutes)');
+    logger.info('Starting token refresh worker (runs every 5 minutes)');
 
     cron.schedule('*/5 * * * *', async () => {
         try {
-            console.log('🔄 Checking for expiring tokens...');
+            logger.debug('Checking for expiring tokens...');
 
             const tenMinutesFromNow = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
@@ -71,44 +76,48 @@ export function startTokenRefreshWorker() {
             const { data: accounts, error } = await supabase
                 .from('gmail_accounts')
                 .select('id, email, refresh_token, token_expiry')
-                .is('token_expiry', 'not', null)
+                .not('token_expiry', 'is', null)
                 .lt('token_expiry', tenMinutesFromNow)
                 .eq('is_active', true);
 
             if (error) {
-                console.error('Error fetching accounts for token refresh:', error);
+                logger.error({ error }, 'Error fetching accounts for token refresh');
                 return;
             }
 
             if (!accounts || accounts.length === 0) {
-                console.log('No tokens need refreshing');
+                logger.debug('No tokens need refreshing');
                 return;
             }
 
-            console.log(`Refreshing tokens for ${accounts.length} accounts...`);
+            logger.info({ count: accounts.length }, 'Refreshing tokens');
 
             for (const account of accounts) {
                 try {
-                    if (!account.refresh_token) {
-                        console.warn(`No refresh token for ${account.email}`);
+                    // Decrypt the refresh token
+                    const refreshToken = safeDecrypt(account.refresh_token);
+
+                    if (!refreshToken) {
+                        logger.warn({ email: account.email }, 'No valid refresh token');
                         continue;
                     }
 
-                    const newTokens = await refreshAccessToken(account.refresh_token);
+                    const newTokens = await refreshAccessToken(refreshToken);
 
+                    // Store encrypted token
                     await supabase
                         .from('gmail_accounts')
                         .update({
-                            access_token: newTokens.access_token!,
+                            access_token: encrypt(newTokens.access_token!),
                             token_expiry: newTokens.expiry_date
                                 ? new Date(newTokens.expiry_date).toISOString()
                                 : null,
                         })
                         .eq('id', account.id);
 
-                    console.log(`✅ Refreshed token for ${account.email}`);
+                    logger.debug({ email: account.email }, 'Token refreshed');
                 } catch (err) {
-                    console.error(`Failed to refresh token for ${account.email}:`, err);
+                    logger.error({ email: account.email, error: err }, 'Failed to refresh token');
 
                     // Mark account as needing re-authentication
                     await supabase
@@ -118,9 +127,9 @@ export function startTokenRefreshWorker() {
                 }
             }
 
-            console.log('✅ Token refresh completed');
+            logger.debug('Token refresh completed');
         } catch (error) {
-            console.error('Token refresh worker error:', error);
+            logger.error({ error }, 'Token refresh worker error');
         }
     });
 }
@@ -130,7 +139,7 @@ export function startTokenRefreshWorker() {
  * Runs every minute to process pending scheduled actions
  */
 export function startScheduledActionsWorker() {
-    console.log('⏰ Starting scheduled actions worker (runs every minute)');
+    logger.info('Starting scheduled actions worker (runs every minute)');
 
     cron.schedule('* * * * *', async () => {
         try {
@@ -139,12 +148,12 @@ export function startScheduledActionsWorker() {
             // Get pending actions that are due
             const { data: actions, error } = await supabase
                 .from('scheduled_actions')
-                .select('*, emails(*)')
+                .select('*, emails(*), drafts(*)')
                 .eq('status', 'pending')
                 .lte('scheduled_at', now);
 
             if (error) {
-                console.error('Error fetching scheduled actions:', error);
+                logger.error({ error }, 'Error fetching scheduled actions');
                 return;
             }
 
@@ -152,7 +161,7 @@ export function startScheduledActionsWorker() {
                 return; // No actions due
             }
 
-            console.log(`Processing ${actions.length} scheduled actions...`);
+            logger.info({ count: actions.length }, 'Processing scheduled actions');
 
             for (const action of actions) {
                 try {
@@ -163,10 +172,34 @@ export function startScheduledActionsWorker() {
                             .update({ is_archived: false })
                             .eq('id', action.email_id);
 
-                        console.log(`✅ Unsnoozed email ${action.email_id}`);
+                        logger.debug({ emailId: action.email_id }, 'Email unsnoozed');
                     } else if (action.action_type === 'send_later') {
-                        // TODO: Send the draft email
-                        console.log(`📧 Sending scheduled email ${action.email_id}`);
+                        // Send the scheduled email
+                        const draft = action.drafts;
+                        if (draft) {
+                            const { data: account } = await supabase
+                                .from('gmail_accounts')
+                                .select('email')
+                                .eq('id', action.gmail_account_id)
+                                .single();
+
+                            if (account) {
+                                await gmailService.sendEmail(action.gmail_account_id!, {
+                                    from: account.email,
+                                    to: draft.to_emails || [],
+                                    cc: draft.cc_emails,
+                                    bcc: draft.bcc_emails,
+                                    subject: draft.subject || '',
+                                    body: draft.body_text || '',
+                                    bodyHtml: draft.body_html,
+                                });
+
+                                // Delete the draft after sending
+                                await supabase.from('drafts').delete().eq('id', draft.id);
+
+                                logger.info({ actionId: action.id }, 'Scheduled email sent');
+                            }
+                        }
                     }
 
                     // Mark action as completed
@@ -178,7 +211,7 @@ export function startScheduledActionsWorker() {
                         })
                         .eq('id', action.id);
                 } catch (err) {
-                    console.error(`Failed to execute action ${action.id}:`, err);
+                    logger.error({ actionId: action.id, error: err }, 'Failed to execute action');
 
                     // Mark action as failed
                     await supabase
@@ -192,9 +225,9 @@ export function startScheduledActionsWorker() {
                 }
             }
 
-            console.log('✅ Scheduled actions processed');
+            logger.debug('Scheduled actions processed');
         } catch (error) {
-            console.error('Scheduled actions worker error:', error);
+            logger.error({ error }, 'Scheduled actions worker error');
         }
     });
 }
@@ -206,5 +239,5 @@ export function startAllWorkers() {
     startSyncWorker();
     startTokenRefreshWorker();
     startScheduledActionsWorker();
-    console.log('✅ All background workers started');
+    logger.info('All background workers started');
 }
