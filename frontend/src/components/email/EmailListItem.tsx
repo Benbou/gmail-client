@@ -1,83 +1,120 @@
 import { useNavigate } from 'react-router-dom';
-import { Mail, Archive, Clock, Trash2 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { Card } from '@/components/ui/card';
+import { Star, Archive, Trash2, Mail, MailOpen } from 'lucide-react';
+import { format } from 'date-fns';
+import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { cn } from "@/lib/utils"
 import type { Email } from '@/types';
 
 interface EmailListItemProps {
     email: Email;
     onArchive: () => void;
     onToggleRead: () => void;
+    onDelete?: () => void;
 }
 
 export default function EmailListItem({
     email,
     onArchive,
     onToggleRead,
+    onDelete,
 }: EmailListItemProps) {
     const navigate = useNavigate();
 
-    const timeAgo = email.received_at
-        ? formatDistanceToNow(new Date(email.received_at), { addSuffix: true })
-        : '';
+    const date = new Date(email.received_at || new Date());
+    const isToday = new Date().toDateString() === date.toDateString();
+    const displayDate = isToday ? format(date, 'h:mm a') : format(date, 'MMM d');
 
     return (
-        <Card
-            className={`m-4 p-4 cursor-pointer hover:shadow-md transition-shadow ${email.is_read ? 'bg-background' : 'bg-accent/10 border-primary/20'
-                }`}
-            onClick={() => navigate(`/email/${email.id}`)}
-        >
-            <div className="flex items-start gap-4">
-                {/* Read/Unread Indicator */}
-                <div className="flex-shrink-0 pt-1">
-                    {!email.is_read && (
-                        <div className="w-2 h-2 rounded-full bg-primary" />
-                    )}
+        <TooltipProvider delayDuration={0}>
+            <div
+                className={cn(
+                    "group flex items-center gap-4 px-4 py-2 border-b cursor-pointer transition-colors hover:shadow-sm relative",
+                    email.is_read ? "bg-background hover:bg-muted/50" : "bg-background font-semibold hover:bg-muted/50"
+                )}
+                onClick={() => navigate(`/email/${email.id}`)}
+            >
+                {/* Selection & Star */}
+                <div className="flex items-center gap-3 shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <Checkbox className="opacity-30 group-hover:opacity-100 data-[state=checked]:opacity-100 transition-opacity" />
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-yellow-400">
+                        <Star className="h-5 w-5" />
+                    </Button>
                 </div>
 
-                {/* Email Content */}
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                                <span className={`font-semibold ${!email.is_read ? 'font-bold' : ''}`}>
-                                    {email.from_name || email.from_email}
-                                </span>
-                            </div>
+                {/* Sender */}
+                <div className={cn("w-48 shrink-0 truncate", !email.is_read && "font-bold text-foreground")}>
+                    {email.from_name || email.from_email}
+                </div>
 
-                            <h3 className={`text-sm mt-1 ${!email.is_read ? 'font-semibold' : ''}`}>
-                                {email.subject || '(no subject)'}
-                            </h3>
+                {/* Content */}
+                <div className="flex-1 min-w-0 flex items-center gap-2 truncate text-muted-foreground">
+                    <span className={cn("text-foreground truncate", !email.is_read && "font-bold")}>
+                        {email.subject || '(no subject)'}
+                    </span>
+                    <span className="shrink-0">-</span>
+                    <span className="truncate">
+                        {email.snippet}
+                    </span>
+                </div>
 
-                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                                {email.snippet}
-                            </p>
-                        </div>
+                {/* Date / Actions */}
+                <div className="w-24 shrink-0 flex justify-end">
+                    {/* Date (Visible by default, hidden on hover) */}
+                    <span className={cn(
+                        "text-xs font-medium group-hover:hidden",
+                        !email.is_read ? "text-foreground" : "text-muted-foreground"
+                    )}>
+                        {displayDate}
+                    </span>
 
-                        <div className="flex-shrink-0 flex flex-col items-end gap-2">
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                {timeAgo}
-                            </span>
-
-                            {/* Quick Actions */}
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* Actions (Hidden by default, visible on hover) */}
+                    <div className="hidden group-hover:flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-7 w-7"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onArchive();
-                                    }}
+                                    className="h-8 w-8"
+                                    onClick={onArchive}
                                 >
                                     <Archive className="h-4 w-4" />
                                 </Button>
-                            </div>
-                        </div>
+                            </TooltipTrigger>
+                            <TooltipContent>Archive</TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={onToggleRead}
+                                >
+                                    {email.is_read ? <Mail className="h-4 w-4" /> : <MailOpen className="h-4 w-4" />}
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>{email.is_read ? 'Mark as unread' : 'Mark as read'}</TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 hover:text-destructive"
+                                    onClick={onDelete}
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Delete</TooltipContent>
+                        </Tooltip>
                     </div>
                 </div>
             </div>
-        </Card>
+        </TooltipProvider>
     );
 }
