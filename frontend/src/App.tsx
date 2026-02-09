@@ -4,9 +4,10 @@ import { Toaster } from '@/components/ui/sonner';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { AuthProvider } from '@/contexts/AuthContext';
 import AppLayout from '@/components/layout/AppLayout';
+import MailView from '@/components/layout/MailView';
+import EmailDetailPanel from '@/components/email/EmailDetailPanel';
 import LoginPage from '@/pages/LoginPage';
 import InboxPage from '@/pages/InboxPage';
-import EmailDetailPage from '@/pages/EmailDetailPage';
 import ComposePage from '@/pages/ComposePage';
 import SettingsPage from '@/pages/SettingsPage';
 import DraftsPage from '@/pages/DraftsPage';
@@ -36,16 +37,39 @@ function App() {
               {/* Main app routes */}
               <Route path="/" element={<AppLayout />}>
                 <Route index element={<Navigate to="/inbox" replace />} />
-                <Route path="inbox" element={<InboxPage />} />
-                <Route path="sent" element={<InboxPage filter="sent" />} />
-                <Route path="starred" element={<InboxPage filter="starred" />} />
-                <Route path="snoozed" element={<InboxPage filter="snoozed" />} />
-                <Route path="spam" element={<InboxPage filter="spam" />} />
-                <Route path="trash" element={<InboxPage filter="trash" />} />
-                <Route path="archived" element={<InboxPage filter="archived" />} />
-                <Route path="drafts" element={<DraftsPage />} />
-                <Route path="label/:labelId" element={<InboxPage />} />
-                <Route path="email/:id" element={<EmailDetailPage />} />
+
+                {/* Mail routes with 3-panel layout */}
+                <Route element={<MailView />}>
+                  <Route path="inbox" element={<InboxPage />}>
+                    <Route path=":id" element={<EmailDetailPanel />} />
+                  </Route>
+                  <Route path="sent" element={<InboxPage filter="sent" />}>
+                    <Route path=":id" element={<EmailDetailPanel />} />
+                  </Route>
+                  <Route path="starred" element={<InboxPage filter="starred" />}>
+                    <Route path=":id" element={<EmailDetailPanel />} />
+                  </Route>
+                  <Route path="snoozed" element={<InboxPage filter="snoozed" />}>
+                    <Route path=":id" element={<EmailDetailPanel />} />
+                  </Route>
+                  <Route path="spam" element={<InboxPage filter="spam" />}>
+                    <Route path=":id" element={<EmailDetailPanel />} />
+                  </Route>
+                  <Route path="trash" element={<InboxPage filter="trash" />}>
+                    <Route path=":id" element={<EmailDetailPanel />} />
+                  </Route>
+                  <Route path="archived" element={<InboxPage filter="archived" />}>
+                    <Route path=":id" element={<EmailDetailPanel />} />
+                  </Route>
+                  <Route path="drafts" element={<DraftsPage />}>
+                    <Route path=":id" element={<EmailDetailPanel />} />
+                  </Route>
+                  <Route path="label/:labelId" element={<InboxPage />}>
+                    <Route path=":id" element={<EmailDetailPanel />} />
+                  </Route>
+                </Route>
+
+                {/* Full-page routes (outside 3-panel) */}
                 <Route path="compose" element={<ComposePage />} />
                 <Route path="settings" element={<SettingsPage />} />
               </Route>

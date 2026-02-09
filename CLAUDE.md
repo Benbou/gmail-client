@@ -73,8 +73,21 @@ Supabase (Free)
 /
 ├── frontend/          # React app
 │   ├── src/
-│   │   ├── components/ui/  # Shadcn UI
-│   │   ├── lib/api.ts      # Axios client
+│   │   ├── components/
+│   │   │   ├── layout/
+│   │   │   │   ├── AppLayout.tsx         # Root layout (Sidebar + TopBar + Outlet)
+│   │   │   │   ├── Sidebar.tsx           # Sidebar with AccountSwitcher integrated
+│   │   │   │   ├── AccountSwitcher.tsx   # Account dropdown (collapsed/expanded modes)
+│   │   │   │   ├── TopBar.tsx            # Search + theme + user menu
+│   │   │   │   └── MailView.tsx          # 3-panel ResizablePanelGroup
+│   │   │   ├── email/
+│   │   │   │   ├── EmailList.tsx
+│   │   │   │   ├── EmailListItem.tsx
+│   │   │   │   └── EmailDetailPanel.tsx  # Email detail in right panel
+│   │   │   └── ui/                       # Shadcn components
+│   │   ├── hooks/
+│   │   │   └── useMediaQuery.ts          # Responsive breakpoint detection
+│   │   ├── lib/api.ts                    # Axios client
 │   │   └── contexts/AuthContext.tsx
 │   └── vite.config.ts
 │
@@ -141,6 +154,40 @@ Supabase (Free)
 3. User can connect 2+ accounts
 
 **Security** : OAuth tokens encrypted (AES-256-GCM), never exposed to frontend
+
+**OAuth Architecture Details** :
+
+**User Authentication** : Supabase Auth
+- Sign up/Login : Email/password (custom JWT)
+- Session : 15min access token, 7d refresh token
+- Storage : localStorage (frontend)
+- Auto-refresh : axios interceptor
+
+**Gmail OAuth** : Custom Flow (googleapis)
+- **Scopes** :
+  - `https://www.googleapis.com/auth/gmail.readonly`
+  - `https://www.googleapis.com/auth/gmail.send`
+  - `https://www.googleapis.com/auth/gmail.modify`
+  - `https://www.googleapis.com/auth/userinfo.email`
+- **Flow** :
+  1. User clicks "Connect Gmail"
+  2. GET /api/auth/google/start → OAuth URL with state token
+  3. Google consent screen
+  4. GET /api/auth/google/callback?code=...
+  5. Backend exchanges code for tokens
+  6. Tokens encrypted (AES-256-GCM) + stored in DB
+  7. Trigger initial sync
+- **Token Management** :
+  - Encryption : AES-256-GCM (api/lib/crypto.ts)
+  - Storage : `gmail_accounts.access_token`, `.refresh_token`
+  - Refresh : Automatic via pg_cron (every 5 min)
+  - State : Vercel KV (in-memory, 5min TTL)
+
+**Pourquoi Custom OAuth (pas Supabase OAuth)** :
+- Supabase OAuth = user authentication (sign in with Google)
+- Gmail API = service authorization (access Gmail data)
+- Besoin scopes personnalisés + accès direct aux tokens
+- Contrôle complet sur refresh/expiry/revocation
 
 ---
 
@@ -240,21 +287,40 @@ SELECT * FROM cron.job_run_details ORDER BY start_time DESC LIMIT 10;
 
 ---
 
-## 🎨 UI Target (Shadcn Mail)
+## 🎨 UI Layout (3-Panel Shadcn Mail)
 
-**3-Panel Layout**
-1. Left : Account switcher + folders (Inbox, Sent, Drafts) + labels
-2. Middle : Email list (sender, subject, snippet, date)
-3. Right : Email display + actions (archive, reply, star, etc.)
+**Référence** : https://v3.shadcn.com/examples/mail
 
-**Components**
-- ResizablePanelGroup / Panel / Handle
-- ScrollArea, Tabs, Badge, Tooltip, DropdownMenu
-- Tiptap editor for compose/reply
+**Architecture** :
 
-**Unified Inbox**
-- "All Accounts" : merge emails from all accounts, sort by date
-- Single account : filter by account_id
+1. **Sidebar** (52px-256px collapsible)
+   - Account Switcher (top, integrated)
+     - Collapsed : Avatar circulaire (initiale du compte)
+     - Expanded : Dropdown avec "All Accounts" + liste comptes
+   - Compose button (circular ou large)
+   - Navigation (Inbox, Sent, Drafts, Spam, Trash, Snoozed, Starred)
+   - Labels (groupés par compte en mode "All Accounts")
+   - Settings (bottom)
+
+2. **Email List Panel** (40% default, 30-60% resizable)
+   - Toolbar (select all, refresh, pagination)
+   - Email list items (sender, subject, snippet, date, account badge)
+   - Active email highlighted
+
+3. **Email Detail Panel** (60% default, 40-70% resizable)
+   - Close button (retour à la liste)
+   - Actions toolbar (archive, delete, star, snooze, more)
+   - Email content (subject, sender, body HTML, attachments)
+   - Reply/Forward buttons
+
+**Responsive** :
+- Desktop (>= 768px) : 3-panel resizable layout
+- Mobile (< 768px) : Single column (liste OU détail)
+
+**Components** :
+- ResizablePanelGroup / Panel / Handle (react-resizable-panels)
+- ScrollArea, Tabs, Badge, Avatar, Button, Tooltip, DropdownMenu
+- Tiptap editor (compose/reply)
 
 ---
 
@@ -360,4 +426,4 @@ git push origin main
 ---
 
 **Last updated** : 2026-02-09
-**Next priority** : Complete Shadcn Mail UI
+**Next priority** : Email threading + keyboard shortcuts

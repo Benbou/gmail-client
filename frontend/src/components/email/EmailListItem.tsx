@@ -37,7 +37,7 @@ export default function EmailListItem({
                     "group flex items-center gap-4 px-4 py-2 border-b cursor-pointer transition-colors hover:shadow-sm relative",
                     email.is_read ? "bg-background hover:bg-muted/50" : "bg-background font-semibold hover:bg-muted/50"
                 )}
-                onClick={() => navigate(`/email/${email.id}`)}
+                onClick={() => navigate(email.id)}
             >
                 {/* Selection & Star */}
                 <div className="flex items-center gap-3 shrink-0" onClick={(e) => e.stopPropagation()}>
