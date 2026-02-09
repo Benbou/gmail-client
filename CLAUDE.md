@@ -118,10 +118,11 @@ A Gmail client with a **unified inbox** merging **2 Gmail accounts**. The UI fol
 
 ### Documentation (Read These First)
 - `README.md` — Project overview
-- `QUICK_START.md` — Deployment guide (2-service setup)
-- `VERCEL_ENV_VARIABLES.md` — Complete env var checklist
-- `SUPABASE_CRON_SETUP.md` — pg_cron setup guide
-- `MIGRATION_STATUS.md` — Architecture history + diagrams
+- `docs/QUICK_START.md` — Deployment guide (2-service setup)
+- `docs/VERCEL_ENV_VARIABLES.md` — Complete env var checklist
+- `docs/SUPABASE_CRON_SETUP.md` — pg_cron setup guide
+- `docs/MIGRATION_STATUS.md` — Architecture history + diagrams
+- `docs/DOCS_INDEX.md` — Complete documentation index
 
 ---
 
@@ -157,13 +158,13 @@ vercel deploy --prod             # Production
 # 4. Supabase pg_cron job URLs
 ```
 
-See `QUICK_START.md` for full deployment steps.
+See `docs/QUICK_START.md` for full deployment steps.
 
 ---
 
 ## Environment Variables
 
-**Complete checklist**: See `VERCEL_ENV_VARIABLES.md`
+**Complete checklist**: See `docs/VERCEL_ENV_VARIABLES.md`
 
 ### Required for Vercel
 
@@ -214,7 +215,7 @@ USE_MEMORY_FALLBACK=true
    - POST to `/api/workers/scheduled-actions`
    - Processes scheduled emails (snooze, send later)
 
-**Setup**: See `SUPABASE_CRON_SETUP.md`
+**Setup**: See `docs/SUPABASE_CRON_SETUP.md`
 
 **Authentication**: Jobs authenticate with `Authorization: Bearer <CRON_SECRET>` (stored in Supabase Vault)
 
@@ -456,6 +457,7 @@ All worker endpoints require `Authorization: Bearer <CRON_SECRET>`.
 - Check Supabase pg_cron: `SELECT * FROM cron.job_run_details ORDER BY start_time DESC;`
 - Verify `CRON_SECRET` matches in Vercel + Supabase Vault
 - Check Vercel function logs for `/api/workers/sync`
+- See `docs/SUPABASE_CRON_SETUP.md` for detailed troubleshooting
 
 ### Local Development
 
@@ -473,17 +475,19 @@ All worker endpoints require `Authorization: Bearer <CRON_SECRET>`.
 
 **Start here**:
 1. `README.md` — Project overview
-2. `QUICK_START.md` — Deploy in 10 minutes
-3. `VERCEL_ENV_VARIABLES.md` — Environment setup
+2. `docs/QUICK_START.md` — Deploy in 10 minutes
+3. `docs/VERCEL_ENV_VARIABLES.md` — Environment setup
+4. `docs/SETUP_VERCEL_NOW.md` — Quick Vercel setup (French)
 
 **Deployment guides**:
-4. `SUPABASE_CRON_SETUP.md` — Setup pg_cron jobs
-5. `MIGRATION_STATUS.md` — Architecture details
+5. `docs/SUPABASE_CRON_SETUP.md` — Setup pg_cron jobs
+6. `docs/MIGRATION_STATUS.md` — Architecture details
 
 **Reference**:
-6. This file (CLAUDE.md) — Complete project context
-7. `ENV_SETUP_GUIDE.md` — Detailed env var reference
-8. `VERCEL_MIGRATION_GUIDE.md` — Legacy (Cloudflare era, outdated)
+7. This file (CLAUDE.md) — Complete project context
+8. `docs/DOCS_INDEX.md` — Complete documentation navigator
+9. `docs/ENV_SETUP_GUIDE.md` — Detailed env var reference
+10. `docs/VERCEL_MIGRATION_GUIDE.md` — Legacy (Cloudflare era, outdated)
 
 ---
 
