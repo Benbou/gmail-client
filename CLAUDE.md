@@ -177,13 +177,13 @@ RLS : All tables filtered by user_id (via gmail_accounts join)
 ```
 VITE_API_URL=/api
 VITE_SUPABASE_URL=https://lfhmxxwcvcvslzndemzh.supabase.co
-VITE_SUPABASE_ANON_KEY=<from Supabase Dashboard>
+VITE_SUPABASE_ANON_KEY=sb_publishable_SQU74g27iA9mpU3VuFpgXA_EUuNLiwq
 ```
 
 **Backend** (secret)
 ```
 SUPABASE_URL=https://lfhmxxwcvcvslzndemzh.supabase.co
-SUPABASE_SERVICE_KEY=<from Supabase Dashboard - service_role>
+SUPABASE_SERVICE_KEY=<Supabase Dashboard → Settings → API → API Secret (sb_secret_...)>
 ENCRYPTION_KEY=<openssl rand -hex 32>
 JWT_SECRET=<openssl rand -base64 32>
 JWT_REFRESH_SECRET=<openssl rand -base64 32>
@@ -195,6 +195,8 @@ USE_MEMORY_FALLBACK=true
 ```
 
 **⚠️ JAMAIS commiter de secrets dans Git !**
+
+**Note Supabase** : Utilise les nouvelles clés (API Secret, pas service_role deprecated)
 
 ---
 
