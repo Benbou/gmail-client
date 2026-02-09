@@ -1,0 +1,19 @@
+{
+  "name": "gmail-client-api",
+  "version": "1.0.0",
+  "description": "Vercel serverless API for Gmail Client",
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.46.1",
+    "@vercel/node": "^3.2.25",
+    "googleapis": "^144.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}

@@ -1,0 +1,19 @@
+name = "gmail-client-cron"
+main = "index.ts"
+compatibility_date = "2024-01-01"
+
+# Cron triggers for scheduled tasks
+[triggers]
+crons = [
+  "*/2 * * * *",  # Email sync every 2 minutes
+  "*/5 * * * *",  # Token refresh every 5 minutes
+  "* * * * *"     # Scheduled actions every minute
+]
+
+# Environment variables
+[vars]
+# Public variable (not a secret)
+API_URL = "https://your-app.vercel.app"
+
+# Secrets (set via: wrangler secret put CRON_SECRET)
+# CRON_SECRET = "your-random-secret-string"
