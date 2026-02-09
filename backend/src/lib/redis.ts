@@ -146,22 +146,6 @@ export async function deleteOAuthState(state: string): Promise<void> {
 }
 
 // ============================================
-// Refresh Token Blacklist
-// ============================================
-
-const TOKEN_BLACKLIST_PREFIX = 'token:blacklist:';
-const TOKEN_BLACKLIST_TTL = 7 * 24 * 60 * 60; // 7 days (refresh token lifetime)
-
-export async function blacklistToken(token: string): Promise<void> {
-    await redis.setex(`${TOKEN_BLACKLIST_PREFIX}${token}`, TOKEN_BLACKLIST_TTL, '1');
-}
-
-export async function isTokenBlacklisted(token: string): Promise<boolean> {
-    const exists = await redis.exists(`${TOKEN_BLACKLIST_PREFIX}${token}`);
-    return exists === 1;
-}
-
-// ============================================
 // Rate Limiting Helpers
 // ============================================
 

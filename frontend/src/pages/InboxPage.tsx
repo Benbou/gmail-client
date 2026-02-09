@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams, useParams } from 'react-router-dom';
 import {
@@ -14,10 +14,12 @@ import {
     Trash2,
     Archive,
     Tag,
+    Mail,
 } from 'lucide-react';
 import { emailsApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccountStore } from '@/stores/accountStore';
+import { supabase } from '@/lib/supabase';
 import type { Email, EmailListParams } from '@/types';
 import EmailListItem from '@/components/email/EmailListItem';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -30,6 +32,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from 'sonner';
 
 type FilterType = 'sent' | 'starred' | 'snoozed' | 'spam' | 'trash' | 'archived';
@@ -53,7 +56,7 @@ export default function InboxPage({ filter }: InboxPageProps) {
     const [searchParams, setSearchParams] = useSearchParams();
     const { labelId } = useParams<{ labelId?: string }>();
     const queryClient = useQueryClient();
-    const { user } = useAuth();
+    const { user, accounts, connectGmail } = useAuth();
     const { selectedAccountId } = useAccountStore();
 
     const page = parseInt(searchParams.get('page') || '1');
@@ -125,6 +128,35 @@ export default function InboxPage({ filter }: InboxPageProps) {
         },
     });
 
+    // Real-time subscription to email changes
+    useEffect(() => {
+        if (!user || accounts.length === 0) return;
+
+        const accountIds = accounts.map(a => a.id).join(',');
+
+        const subscription = supabase
+            .channel(`emails-${user.id}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*', // INSERT, UPDATE, DELETE
+                    schema: 'public',
+                    table: 'emails',
+                    filter: `gmail_account_id=in.(${accountIds})`
+                },
+                (payload) => {
+                    console.log('Email changed:', payload);
+                    // Invalidate queries to refetch
+                    queryClient.invalidateQueries({ queryKey: ['emails'] });
+                }
+            )
+            .subscribe();
+
+        return () => {
+            subscription.unsubscribe();
+        };
+    }, [user, accounts, queryClient]);
+
     // Archive mutation
     const archiveMutation = useMutation({
         mutationFn: (emailId: string) => emailsApi.archive(emailId),
@@ -157,6 +189,28 @@ export default function InboxPage({ filter }: InboxPageProps) {
             toast.error('Failed to delete email');
         },
     });
+
+    // Show "Connect Gmail" prompt if no accounts
+    if (accounts.length === 0) {
+        return (
+            <div className="flex items-center justify-center h-full">
+                <Card className="max-w-md">
+                    <CardHeader>
+                        <CardTitle>Connect Your Gmail Account</CardTitle>
+                        <CardDescription>
+                            Connect your Gmail to start syncing emails
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button onClick={() => connectGmail()} className="w-full">
+                            <Mail className="h-4 w-4 mr-2" />
+                            Connect Gmail
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
 
     if (error) {
         return (

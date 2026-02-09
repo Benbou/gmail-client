@@ -1,4 +1,4 @@
-import { Check, ChevronDown, Mail } from 'lucide-react';
+import { Check, ChevronDown, Mail, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAccountStore } from '@/stores/accountStore';
 
 export default function AccountSwitcher() {
-  const { accounts } = useAuth();
+  const { accounts, connectGmail } = useAuth();
   const { selectedAccountId, setSelectedAccount } = useAccountStore();
 
   // Find selected account to display in trigger
@@ -51,6 +51,12 @@ export default function AccountSwitcher() {
             ))}
           </>
         )}
+
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => connectGmail()} className="cursor-pointer">
+          <Plus className="h-4 w-4 mr-2" />
+          Connect Another Gmail
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
