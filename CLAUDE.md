@@ -6,10 +6,16 @@ Guide pour Claude Code. Contient tout ce dont tu as besoin pour comprendre et tr
 
 ## 📍 État du Projet
 
-**Status** : ✅ Backend déployé, Frontend en développement
+**Status** : ✅ Infrastructure simplifiée (10/12 fonctions Vercel)
 **Architecture** : Vercel (Frontend + API serverless) + Supabase (DB + Cron)
 **Deployment** : https://gmail-client-xi-lemon.vercel.app
 **Coût** : $0/mois (free tiers)
+
+**Recent Cleanup** (2026-02-09):
+- Supprimé backend Railway legacy (2,620 lignes)
+- Consolidé API routes (14→10 fonctions)
+- Migré vers Supabase API Secrets (sb_secret_...)
+- Simplifié docs (7 fichiers → 3 fichiers)
 
 ---
 
@@ -32,23 +38,31 @@ Client Gmail avec **inbox unifié** pour 2+ comptes Gmail.
 ## 🏗️ Architecture
 
 ```
-Vercel (Free)
+Vercel (Free) - 10/12 functions
 ├── Frontend: React 19 + Vite + TypeScript
 │   └── /frontend
 └── API: Serverless functions (Node 20)
-    └── /api
-        ├── auth/google/*
-        ├── accounts/*
-        ├── emails/*
-        └── workers/* (cron handlers)
+    └── /api (10 routes)
+        ├── auth/google/start
+        ├── auth/google/callback
+        ├── accounts/
+        │   ├── index (GET list)
+        │   ├── [id] (DELETE)
+        │   └── [id]/sync (POST)
+        └── emails/
+            ├── index (GET list)
+            ├── send (POST)
+            ├── [id] (GET detail)
+            ├── [id]/archive (PATCH)
+            └── [id]/snooze (PATCH)
 
 Supabase (Free)
 ├── PostgreSQL (database)
 ├── Realtime (live updates)
 └── pg_cron (automated tasks)
-    ├── */2 * * * * → /api/workers/sync
-    ├── */5 * * * * → /api/workers/refresh-tokens
-    └── * * * * * → /api/workers/scheduled-actions
+    ├── */2 * * * * → Email sync (via Supabase function)
+    ├── */5 * * * * → Token refresh
+    └── * * * * * → Scheduled actions (snooze, send later)
 ```
 
 ---
@@ -64,7 +78,7 @@ Supabase (Free)
 │   │   └── contexts/AuthContext.tsx
 │   └── vite.config.ts
 │
-├── api/               # Vercel serverless
+├── api/               # Vercel serverless (10 functions)
 │   ├── lib/
 │   │   ├── auth.ts        # JWT validation
 │   │   ├── supabase.ts    # DB client
@@ -72,17 +86,18 @@ Supabase (Free)
 │   ├── services/
 │   │   ├── gmail-service.ts
 │   │   └── gmail-sync.ts
-│   └── workers/           # Cron handlers
+│   └── [routes]/          # API endpoints (auth, accounts, emails)
 │
 ├── supabase/migrations/
 │   ├── 20260209145637_initial_schema.sql
 │   ├── 20260209145657_rls_policies.sql
 │   └── 20260209_001_setup_cron_jobs.sql
 │
-├── vercel.json        # Monorepo config
-├── CLAUDE.md          # Ce fichier
-├── README.md          # Overview
-└── SETUP.md           # Deployment guide
+├── vercel.json              # Monorepo config
+├── deploy-vercel.sh         # Automated deploy script
+├── CLAUDE.md                # Ce fichier
+├── README.md                # Single source of truth
+└── SUPABASE_API_SECRET.md   # Guide API Secret generation
 ```
 
 ---
@@ -129,31 +144,25 @@ Supabase (Free)
 
 ---
 
-## 🛣️ API Endpoints
+## 🛣️ API Endpoints (10 routes)
 
-**Auth**
-- POST /api/auth/signup
-- POST /api/auth/login
-- POST /api/auth/refresh
+**Auth** (2)
 - GET /api/auth/google/start
 - GET /api/auth/google/callback
 
-**Accounts**
-- GET /api/accounts
+**Accounts** (3)
+- GET /api/accounts (list all)
 - DELETE /api/accounts/:id
+- POST /api/accounts/:id/sync
 
-**Emails**
+**Emails** (5)
 - GET /api/emails (supports ?account_id=)
 - GET /api/emails/:id
 - POST /api/emails/send
 - PATCH /api/emails/:id/archive
-- PATCH /api/emails/:id/star
-- PATCH /api/emails/:id/read
+- PATCH /api/emails/:id/snooze
 
-**Workers** (Cron - auth: Bearer CRON_SECRET)
-- POST /api/workers/sync
-- POST /api/workers/refresh-tokens
-- POST /api/workers/scheduled-actions
+**Note** : Workers (sync, refresh-tokens, scheduled-actions) sont gérés par Supabase pg_cron directement, plus besoin de routes API dédiées.
 
 ---
 
@@ -183,7 +192,7 @@ VITE_SUPABASE_ANON_KEY=sb_publishable_SQU74g27iA9mpU3VuFpgXA_EUuNLiwq
 **Backend** (secret)
 ```
 SUPABASE_URL=https://lfhmxxwcvcvslzndemzh.supabase.co
-SUPABASE_SERVICE_KEY=<Supabase Dashboard → Settings → API → API Secret (sb_secret_...)>
+SUPABASE_SERVICE_KEY=<Supabase API Secret - voir SUPABASE_API_SECRET.md>
 ENCRYPTION_KEY=<openssl rand -hex 32>
 JWT_SECRET=<openssl rand -base64 32>
 JWT_REFRESH_SECRET=<openssl rand -base64 32>
@@ -196,7 +205,10 @@ USE_MEMORY_FALLBACK=true
 
 **⚠️ JAMAIS commiter de secrets dans Git !**
 
-**Note Supabase** : Utilise les nouvelles clés (API Secret, pas service_role deprecated)
+**Note Supabase API Secret** :
+- Format : `sb_secret_...` (pas l'ancien `service_role` JWT)
+- Dashboard → Settings → API → "API Secrets" section
+- Guide complet : `SUPABASE_API_SECRET.md`
 
 ---
 
@@ -330,8 +342,20 @@ git push origin main
 
 ## 📚 Other Docs
 
-- **SETUP.md** : Deployment guide (simple, non-tech friendly)
-- **README.md** : Project overview
+- **README.md** : Single source of truth (setup, deployment, troubleshooting)
+- **SUPABASE_API_SECRET.md** : Guide pour générer l'API Secret Supabase
+- **deploy-vercel.sh** : Script automatisé (1 commande = déploiement complet)
+
+---
+
+## 📊 Infrastructure Status
+
+**Vercel Functions** : 10/12 (83% usage - safe margin)
+**Code Base** : ~2,500 lignes backend (down from 5,500+)
+**Documentation** : 3 fichiers (down from 10+)
+**Services** : 2 (Vercel + Supabase)
+
+**✅ Ready for deployment**
 
 ---
 
