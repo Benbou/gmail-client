@@ -2,7 +2,7 @@
 
 Gmail client with unified inbox, multi-account support, and real-time sync.
 
-**Live Demo**: https://gmail-client-xi-lemon.vercel.app
+**Live Demo**: https://gmail-client.vercel.app
 
 ---
 
@@ -60,7 +60,7 @@ Gmail client with unified inbox, multi-account support, and real-time sync.
 2. Create project → Enable Gmail API
 3. OAuth consent screen → Configure
 4. Create OAuth 2.0 credentials
-5. Add redirect URI: `https://gmail-client-xi-lemon.vercel.app/api/auth/google/callback`
+5. Add redirect URI: `https://gmail-client.vercel.app/api/auth/google/callback`
 6. Save Client ID + Client Secret
 
 ### 3. Local Development
@@ -150,7 +150,7 @@ SUPABASE_SERVICE_KEY=sb_secret_...  # From Supabase Dashboard → API → API Se
 # Google OAuth
 GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-client-secret
-GOOGLE_REDIRECT_URI=https://gmail-client-xi-lemon.vercel.app/api/auth/google/callback
+GOOGLE_REDIRECT_URI=https://gmail-client.vercel.app/api/auth/google/callback
 
 # Security (generate with: openssl rand -base64 32)
 ENCRYPTION_KEY=<hex key for AES-256-GCM>
@@ -159,7 +159,7 @@ JWT_REFRESH_SECRET=<secret for refresh tokens>
 CRON_SECRET=WdaG0F+LKui7hRqv+q2Eqtpc1IhdNYrWGNhe2UsjX4Y=
 
 # App config
-FRONTEND_URL=https://gmail-client-xi-lemon.vercel.app
+FRONTEND_URL=https://gmail-client.vercel.app
 NODE_ENV=production
 LOG_LEVEL=info
 USE_MEMORY_FALLBACK=true
@@ -301,7 +301,7 @@ Based on [Shadcn Mail example](https://v3.shadcn.com/examples/mail):
 ## 📊 Deployment Status
 
 **Current**: ✅ Deployed to Vercel
-**URL**: https://gmail-client-xi-lemon.vercel.app
+**URL**: https://gmail-client.vercel.app
 **Functions**: 10/12 (under Hobby plan limit)
 **Database**: Supabase (free tier)
 **Cost**: $0/month

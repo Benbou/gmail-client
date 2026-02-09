@@ -8,7 +8,7 @@ Guide pour Claude Code. Contient tout ce dont tu as besoin pour comprendre et tr
 
 **Status** : ✅ Infrastructure simplifiée (10/12 fonctions Vercel)
 **Architecture** : Vercel (Frontend + API serverless) + Supabase (DB + Cron)
-**Deployment** : https://gmail-client-xi-lemon.vercel.app
+**Deployment** : https://gmail-client.vercel.app
 **Coût** : $0/mois (free tiers)
 
 **Recent Cleanup** (2026-02-09):
@@ -197,7 +197,7 @@ ENCRYPTION_KEY=<openssl rand -hex 32>
 JWT_SECRET=<openssl rand -base64 32>
 JWT_REFRESH_SECRET=<openssl rand -base64 32>
 CRON_SECRET=WdaG0F+LKui7hRqv+q2Eqtpc1IhdNYrWGNhe2UsjX4Y=
-FRONTEND_URL=https://gmail-client-xi-lemon.vercel.app
+FRONTEND_URL=https://gmail-client.vercel.app
 NODE_ENV=production
 LOG_LEVEL=info
 USE_MEMORY_FALLBACK=true

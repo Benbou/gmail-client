@@ -5,7 +5,7 @@
 
 set -e
 
-PRODUCTION_URL="https://gmail-client-xi-lemon.vercel.app"
+PRODUCTION_URL="https://gmail-client.vercel.app"
 API_URL="${PRODUCTION_URL}/api"
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

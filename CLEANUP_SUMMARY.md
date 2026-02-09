@@ -155,7 +155,7 @@ supabase/SETUP.md
 
 ### Vérification Post-Déploiement
 
-- [ ] Site accessible : https://gmail-client-xi-lemon.vercel.app
+- [ ] Site accessible : https://gmail-client.vercel.app
 - [ ] Pas d'erreur "Legacy API keys disabled"
 - [ ] OAuth Google fonctionne
 - [ ] Emails se synchronisent (check après 2 min)

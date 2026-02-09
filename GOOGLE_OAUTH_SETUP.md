@@ -44,12 +44,12 @@ Ce guide vous aide à configurer Google OAuth pour permettre aux utilisateurs de
 6. **Name**: "Gmail Client Web"
 7. **Authorized JavaScript origins**:
    ```
-   https://gmail-client-xi-lemon.vercel.app
+   https://gmail-client.vercel.app
    ```
 
 8. **Authorized redirect URIs** (ajouter les 2):
    ```
-   https://gmail-client-xi-lemon.vercel.app/api/auth/google/callback
+   https://gmail-client.vercel.app/api/auth/google/callback
    https://lfhmxxwcvcvslzndemzh.supabase.co/auth/v1/callback
    ```
 
@@ -73,7 +73,7 @@ Ce guide vous aide à configurer Google OAuth pour permettre aux utilisateurs de
 # Google OAuth Credentials
 GOOGLE_CLIENT_ID=xxxxx.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=GOCSPX-xxxxx
-GOOGLE_REDIRECT_URI=https://gmail-client-xi-lemon.vercel.app/api/auth/google/callback
+GOOGLE_REDIRECT_URI=https://gmail-client.vercel.app/api/auth/google/callback
 ```
 
 **Remplacer `xxxxx`** par vos vraies valeurs copiées à l'étape 3.
@@ -110,7 +110,7 @@ GOOGLE_REDIRECT_URI=https://gmail-client-xi-lemon.vercel.app/api/auth/google/cal
 
 ### Test 1: Vérifier que le CSS fonctionne
 
-1. **Ouvrir**: https://gmail-client-xi-lemon.vercel.app
+1. **Ouvrir**: https://gmail-client.vercel.app
 2. **Hard refresh**: `Cmd+Shift+R` (Mac) ou `Ctrl+Shift+R` (Windows)
 3. **Vérifier**:
    - ✅ Sidebar avec design Shadcn UI (pas de HTML brut)
