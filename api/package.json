@@ -10,10 +10,15 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.46.1",
     "@vercel/node": "^3.2.25",
-    "googleapis": "^144.0.0"
+    "googleapis": "^144.0.0",
+    "zod": "^3.24.1",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.7",
     "typescript": "^5.7.2"
   }
 }
