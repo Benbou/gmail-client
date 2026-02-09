@@ -8,6 +8,9 @@ import { createLogger } from '../lib/logger.js';
 
 const logger = createLogger('cron-jobs');
 
+// Store cron tasks for cleanup
+const cronTasks: cron.ScheduledTask[] = [];
+
 /**
  * Background worker for automatic email syncing
  * Runs every 2 minutes and syncs all active accounts
@@ -15,7 +18,7 @@ const logger = createLogger('cron-jobs');
 export function startSyncWorker() {
     logger.info('Starting auto-sync worker (runs every 2 minutes)');
 
-    cron.schedule('*/2 * * * *', async () => {
+    const task = cron.schedule('*/2 * * * *', async () => {
         try {
             logger.debug('Running scheduled email sync...');
 
@@ -57,6 +60,8 @@ export function startSyncWorker() {
             logger.error({ error }, 'Sync worker error');
         }
     });
+
+    cronTasks.push(task);
 }
 
 /**
@@ -66,7 +71,7 @@ export function startSyncWorker() {
 export function startTokenRefreshWorker() {
     logger.info('Starting token refresh worker (runs every 5 minutes)');
 
-    cron.schedule('*/5 * * * *', async () => {
+    const task = cron.schedule('*/5 * * * *', async () => {
         try {
             logger.debug('Checking for expiring tokens...');
 
@@ -132,6 +137,8 @@ export function startTokenRefreshWorker() {
             logger.error({ error }, 'Token refresh worker error');
         }
     });
+
+    cronTasks.push(task);
 }
 
 /**
@@ -141,7 +148,7 @@ export function startTokenRefreshWorker() {
 export function startScheduledActionsWorker() {
     logger.info('Starting scheduled actions worker (runs every minute)');
 
-    cron.schedule('* * * * *', async () => {
+    const task = cron.schedule('* * * * *', async () => {
         try {
             const now = new Date().toISOString();
 
@@ -230,6 +237,8 @@ export function startScheduledActionsWorker() {
             logger.error({ error }, 'Scheduled actions worker error');
         }
     });
+
+    cronTasks.push(task);
 }
 
 /**
@@ -240,4 +249,14 @@ export function startAllWorkers() {
     startTokenRefreshWorker();
     startScheduledActionsWorker();
     logger.info('All background workers started');
+}
+
+/**
+ * Stop all background workers
+ */
+export function stopAllWorkers() {
+    logger.info('Stopping all background workers');
+    cronTasks.forEach((task) => task.stop());
+    cronTasks.length = 0;
+    logger.info('All background workers stopped');
 }

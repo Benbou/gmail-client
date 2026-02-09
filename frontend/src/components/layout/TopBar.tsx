@@ -4,6 +4,7 @@ import { Search, Menu, HelpCircle, Settings, Grip, Sun, Moon, Command } from 'lu
 import { useTheme } from '@/components/ThemeProvider';
 import { useAuth } from '@/contexts/AuthContext';
 import CommandPalette from '@/components/CommandPalette';
+import AccountSwitcher from './AccountSwitcher';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -46,14 +47,15 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
     return (
         <TooltipProvider delayDuration={0}>
             <div className="h-16 border-b bg-background flex items-center justify-between px-4 gap-4">
-                {/* Left: Menu & Logo (Mobile/Collapsed) */}
-                <div className="flex items-center gap-2">
+                {/* Left: Menu, Logo & Account Switcher */}
+                <div className="flex items-center gap-3">
                     <Button variant="ghost" size="icon" onClick={onMenuClick} className="shrink-0">
                         <Menu className="h-5 w-5" />
                     </Button>
                     <div className="flex items-center gap-2 md:hidden">
                         <span className="text-xl font-bold">Gmail</span>
                     </div>
+                    <AccountSwitcher />
                 </div>
 
                 {/* Center: Search */}

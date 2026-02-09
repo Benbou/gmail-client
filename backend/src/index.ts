@@ -14,6 +14,7 @@ import emailsRoutes from './routes/emails.js';
 import syncRoutes from './routes/sync.js';
 import { errorHandler, notFoundHandler } from './lib/errors.js';
 import { requestLogger, logger } from './lib/logger.js';
+import { startAllWorkers, stopAllWorkers } from './workers/cron-jobs.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -174,11 +175,18 @@ const server = app.listen(PORT, () => {
         environment: process.env.NODE_ENV || 'development',
         corsOrigins: allowedOrigins,
     }, 'Server started');
+
+    // Start background workers after server is ready
+    startAllWorkers();
 });
 
 // Graceful shutdown
 const shutdown = (signal: string) => {
     logger.info({ signal }, 'Shutdown signal received');
+
+    // Stop background workers first
+    stopAllWorkers();
+
     server.close(() => {
         logger.info('Server closed');
         process.exit(0);

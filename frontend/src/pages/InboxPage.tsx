@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { emailsApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAccountStore } from '@/stores/accountStore';
 import type { Email, EmailListParams } from '@/types';
 import EmailListItem from '@/components/email/EmailListItem';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -53,6 +54,7 @@ export default function InboxPage({ filter }: InboxPageProps) {
     const { labelId } = useParams<{ labelId?: string }>();
     const queryClient = useQueryClient();
     const { user } = useAuth();
+    const { selectedAccountId } = useAccountStore();
 
     const page = parseInt(searchParams.get('page') || '1');
     const userId = user?.id || 'demo-user-id';
@@ -71,6 +73,12 @@ export default function InboxPage({ filter }: InboxPageProps) {
             sort: 'received_at',
             order: 'desc',
         };
+
+        // Only filter by account if one is specifically selected
+        if (selectedAccountId) {
+            params.account_id = selectedAccountId;
+        }
+        // When selectedAccountId is null, backend returns all accounts (unified inbox)
 
         switch (filter) {
             case 'sent':
@@ -106,7 +114,7 @@ export default function InboxPage({ filter }: InboxPageProps) {
         }
 
         return params;
-    }, [filter, labelId, page, userId]);
+    }, [filter, labelId, page, userId, selectedAccountId]);
 
     // Fetch emails
     const { data, isLoading, error, refetch } = useQuery({

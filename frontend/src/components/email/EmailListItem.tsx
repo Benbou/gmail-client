@@ -3,8 +3,10 @@ import { Star, Archive, Trash2, Mail, MailOpen } from 'lucide-react';
 import { format } from 'date-fns';
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
+import { useAccountStore } from '@/stores/accountStore';
 import type { Email } from '@/types';
 
 interface EmailListItemProps {
@@ -21,6 +23,8 @@ export default function EmailListItem({
     onDelete,
 }: EmailListItemProps) {
     const navigate = useNavigate();
+    const { selectedAccountId } = useAccountStore();
+    const showAccountBadge = !selectedAccountId; // Only show in unified inbox
 
     const date = new Date(email.received_at || new Date());
     const isToday = new Date().toDateString() === date.toDateString();
@@ -44,8 +48,20 @@ export default function EmailListItem({
                 </div>
 
                 {/* Sender */}
-                <div className={cn("w-48 shrink-0 truncate", !email.is_read && "font-bold text-foreground")}>
-                    {email.from_name || email.from_email}
+                <div className="w-48 shrink-0 flex items-center gap-2">
+                    <span className={cn("truncate", !email.is_read && "font-bold text-foreground")}>
+                        {email.from_name || email.from_email}
+                    </span>
+                    {showAccountBadge && email.gmail_accounts?.account_email && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Badge variant="outline" className="text-xs shrink-0">
+                                    {email.gmail_accounts.account_email.split('@')[0]}
+                                </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>{email.gmail_accounts.account_email}</TooltipContent>
+                        </Tooltip>
+                    )}
                 </div>
 
                 {/* Content */}

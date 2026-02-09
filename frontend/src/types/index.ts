@@ -42,6 +42,10 @@ export interface Email {
     headers?: Record<string, any>;
     created_at: string;
     updated_at: string;
+    gmail_accounts?: {
+        email?: string;
+        account_email?: string; // Backend uses 'account_email' alias
+    };
 }
 
 export interface Label {
