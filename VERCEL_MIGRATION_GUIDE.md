@@ -1,5 +1,13 @@
 # Vercel Deployment Guide (Railway-Free Architecture)
 
+> **⚠️ OUTDATED**: This guide references Cloudflare Worker for cron jobs.
+>
+> **See [QUICK_START.md](./QUICK_START.md)** for the **new 2-service architecture** using Supabase pg_cron instead.
+>
+> This file is kept for reference only.
+
+---
+
 This guide helps you deploy the Gmail Client on Vercel with Cloudflare Workers for cron jobs.
 
 ## 🏗️ Architecture

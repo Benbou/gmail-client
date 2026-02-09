@@ -14,18 +14,22 @@ gmail-client/
 │   │   ├── pages/        # Route pages
 │   │   └── types/        # TypeScript types
 │   └── package.json
-├── backend/           # Node.js + Express backend
-│   ├── src/
-│   │   ├── routes/       # API route handlers
-│   │   ├── services/     # Business logic
-│   │   ├── middleware/   # Express middleware
-│   │   ├── workers/      # Background workers
-│   │   └── index.ts      # Entry point
-│   └── package.json
+├── api/               # Vercel serverless functions (Express backend)
+│   ├── routes/          # API route handlers
+│   ├── services/        # Business logic
+│   ├── middleware/      # Express middleware
+│   ├── workers/         # Cron job handlers
+│   └── index.ts         # Entry point
+├── supabase/
+│   └── migrations/      # Database schema & pg_cron setup
 └── README.md
 ```
 
 ## Tech Stack
+
+**Stack: 2 Services (100% Free)**
+- ☁️ **Vercel** (Frontend + API)
+- 🗄️ **Supabase** (Database + Realtime + Cron)
 
 ### Frontend
 - React 19 + TypeScript
@@ -36,70 +40,56 @@ gmail-client/
 - React Router (routing)
 - Tiptap (rich text editor)
 
-### Backend
+### Backend (Vercel Serverless)
 - Node.js + Express + TypeScript
 - googleapis (Gmail API)
-- Supabase (database + auth)
-- node-cron (scheduled tasks)
+- Supabase PostgreSQL (database)
+- Supabase pg_cron (scheduled tasks)
 
 ## Getting Started
 
 ### Prerequisites
 - Node.js 20+
-- npm or yarn
-- Supabase account
+- Supabase account (free tier)
 - Google Cloud project with Gmail API enabled
+- Vercel account (for deployment)
 
-### Setup
+### Quick Start
 
-1. **Clone and install dependencies**
+See **[QUICK_START.md](./QUICK_START.md)** for detailed setup instructions.
+
+**TL;DR:**
+
+1. **Setup Supabase**
+   ```bash
+   # Apply database migrations
+   supabase link --project-ref <your-ref>
+   supabase db push
+   ```
+
+2. **Configure environment variables** (see [ENV_SETUP_GUIDE.md](./ENV_SETUP_GUIDE.md))
+
+3. **Deploy to Vercel**
+   ```bash
+   vercel deploy
+   ```
+
+4. **Setup automated cron jobs** (see [SUPABASE_CRON_SETUP.md](./SUPABASE_CRON_SETUP.md))
+   - Email sync (every 2 min)
+   - Token refresh (every 5 min)
+   - Scheduled actions (every 1 min)
+
+### Local Development
 
 ```bash
-# Install frontend dependencies
+# Frontend dev server
 cd frontend
 npm install
+npm run dev  # http://localhost:5173
 
-# Install backend dependencies
-cd ../backend
-npm install
+# API dev server (optional - Vercel CLI)
+vercel dev   # http://localhost:3000
 ```
-
-2. **Configure environment variables**
-
-Backend (`.env`):
-```bash
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/google/callback
-
-SUPABASE_URL=your_supabase_url
-SUPABASE_SERVICE_KEY=your_supabase_service_key
-
-JWT_SECRET=your_random_secret
-PORT=3000
-```
-
-Frontend (`.env`):
-```bash
-VITE_API_URL=http://localhost:3000
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
-
-3. **Run development servers**
-
-```bash
-# Terminal 1: Backend
-cd backend
-npm run dev
-
-# Terminal 2: Frontend
-cd frontend
-npm run dev
-```
-
-Frontend: http://localhost:5173  
-Backend: http://localhost:3000
 
 ## Core Features
 
