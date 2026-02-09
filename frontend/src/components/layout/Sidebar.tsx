@@ -12,7 +12,6 @@ import {
     Trash2,
     AlertCircle,
     Star,
-    Tag,
     ChevronDown,
     ChevronRight,
 } from 'lucide-react';
@@ -202,14 +201,7 @@ export default function Sidebar({ isCollapsed }: SidebarProps) {
                             </Collapsible>
                         )}
 
-                        {isCollapsed && (
-                            <NavItem
-                                to="/labels"
-                                icon={Tag}
-                                label="Labels"
-                                isCollapsed={isCollapsed}
-                            />
-                        )}
+                        {/* In collapsed mode, labels are accessible by expanding the sidebar */}
                     </nav>
                 </ScrollArea>
 

@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { Star, Archive, Trash2, Mail, MailOpen } from 'lucide-react';
 import { format } from 'date-fns';
 import { Checkbox } from "@/components/ui/checkbox"
@@ -22,8 +22,9 @@ export default function EmailListItem({
     onToggleRead,
     onDelete,
 }: EmailListItemProps) {
-    const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const { selectedAccountId } = useAccountStore();
+    const isSelected = searchParams.get('id') === email.id;
     const showAccountBadge = !selectedAccountId; // Only show in unified inbox
 
     const date = new Date(email.received_at || new Date());
@@ -35,9 +36,15 @@ export default function EmailListItem({
             <div
                 className={cn(
                     "group flex items-center gap-4 px-4 py-2 border-b cursor-pointer transition-colors hover:shadow-sm relative",
-                    email.is_read ? "bg-background hover:bg-muted/50" : "bg-background font-semibold hover:bg-muted/50"
+                    isSelected
+                        ? "bg-accent"
+                        : email.is_read ? "bg-background hover:bg-muted/50" : "bg-background font-semibold hover:bg-muted/50"
                 )}
-                onClick={() => navigate(email.id)}
+                onClick={() => {
+                    const newParams = new URLSearchParams(searchParams);
+                    newParams.set('id', email.id);
+                    setSearchParams(newParams);
+                }}
             >
                 {/* Selection & Star */}
                 <div className="flex items-center gap-3 shrink-0" onClick={(e) => e.stopPropagation()}>

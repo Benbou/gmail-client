@@ -1,35 +1,43 @@
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
-import { Outlet, useParams } from 'react-router-dom';
+import { Outlet, useSearchParams } from 'react-router-dom';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import EmailDetailPanel from '@/components/email/EmailDetailPanel';
 
 export default function MailView() {
   const isMobile = useMediaQuery('(max-width: 768px)');
-  const { id: emailId } = useParams<{ id?: string }>();
-  const showDetailPanel = !!emailId;
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedEmailId = searchParams.get('id');
 
-  // Mobile: Show only list or detail
-  if (isMobile && showDetailPanel) {
-    return <Outlet context={{ mode: 'detail' }} />;
+  const handleCloseEmail = () => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete('id');
+    setSearchParams(newParams);
+  };
+
+  // Mobile: Show only detail when email selected
+  if (isMobile && selectedEmailId) {
+    return <EmailDetailPanel emailId={selectedEmailId} onClose={handleCloseEmail} />;
   }
 
+  // Mobile: Show only list
   if (isMobile) {
-    return <Outlet context={{ mode: 'list' }} />;
+    return <Outlet />;
   }
 
-  // Desktop: 3-panel resizable layout
+  // Desktop: resizable layout
   return (
     <ResizablePanelGroup direction="horizontal" className="h-full">
       {/* Email List Panel */}
-      <ResizablePanel defaultSize={showDetailPanel ? 40 : 100} minSize={30}>
-        <Outlet context={{ mode: 'list' }} />
+      <ResizablePanel defaultSize={selectedEmailId ? 40 : 100} minSize={30}>
+        <Outlet />
       </ResizablePanel>
 
       {/* Email Detail Panel (conditional) */}
-      {showDetailPanel && (
+      {selectedEmailId && (
         <>
           <ResizableHandle withHandle />
           <ResizablePanel defaultSize={60} minSize={40}>
-            <Outlet context={{ mode: 'detail' }} />
+            <EmailDetailPanel emailId={selectedEmailId} onClose={handleCloseEmail} />
           </ResizablePanel>
         </>
       )}
