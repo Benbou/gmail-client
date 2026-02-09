@@ -1,6 +1,6 @@
 import { google, gmail_v1 } from 'googleapis';
-import { supabase, GmailAccount } from '../lib/supabase';
-import { decrypt, safeDecrypt, encrypt } from '../lib/crypto';
+import { supabase, GmailAccount } from '../_lib/supabase';
+import { decrypt, safeDecrypt, encrypt } from '../_lib/crypto';
 
 interface SendEmailOptions {
   from: string;

@@ -1,9 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { z } from 'zod';
-import { supabase } from '../lib/supabase';
-import { authenticate } from '../lib/auth';
-import { ApiError, sendError } from '../lib/errors';
-import { accountUpdateSchema, AccountUpdateBody } from '../lib/validations';
+import { supabase } from '../_lib/supabase';
+import { authenticate } from '../_lib/auth';
+import { ApiError, sendError } from '../_lib/errors';
+import { accountUpdateSchema, AccountUpdateBody } from '../_lib/validations';
 
 /**
  * GET/PATCH/DELETE /api/accounts/[id]

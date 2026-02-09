@@ -1,9 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { z } from 'zod';
-import { supabase } from '../../lib/supabase';
-import { authenticate } from '../../lib/auth';
-import { ApiError, sendError } from '../../lib/errors';
-import { gmailSyncService } from '../../services/gmail-sync';
+import { supabase } from '../../_lib/supabase';
+import { authenticate } from '../../_lib/auth';
+import { ApiError, sendError } from '../../_lib/errors';
+import { gmailSyncService } from '../../_services/gmail-sync';
 
 /**
  * POST /api/accounts/[id]/sync

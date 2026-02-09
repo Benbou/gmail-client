@@ -1,9 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { randomBytes } from 'crypto';
-import { authenticate } from '../../lib/auth';
-import { getAuthUrl } from '../../lib/gmail-oauth';
-import { setOAuthState } from '../../lib/redis';
-import { ApiError, sendError } from '../../lib/errors';
+import { authenticate } from '../../_lib/auth';
+import { getAuthUrl } from '../../_lib/gmail-oauth';
+import { setOAuthState } from '../../_lib/redis';
+import { ApiError, sendError } from '../../_lib/errors';
 
 /**
  * GET /api/auth/google/start

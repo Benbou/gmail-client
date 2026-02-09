@@ -1,7 +1,7 @@
 import { google, gmail_v1 } from 'googleapis';
-import { supabase, Email, GmailAccount } from '../lib/supabase';
-import { getGmailClient, refreshAccessToken } from '../lib/gmail-oauth';
-import { decrypt, encrypt, safeDecrypt } from '../lib/crypto';
+import { supabase, Email, GmailAccount } from '../_lib/supabase';
+import { getGmailClient, refreshAccessToken } from '../_lib/gmail-oauth';
+import { decrypt, encrypt, safeDecrypt } from '../_lib/crypto';
 
 interface SyncOptions {
   accountId: string;

@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabase } from '../lib/supabase';
-import { authenticate } from '../lib/auth';
-import { ApiError, sendError } from '../lib/errors';
-import { emailListQuerySchema, EmailListQuery } from '../lib/validations';
+import { supabase } from '../_lib/supabase';
+import { authenticate } from '../_lib/auth';
+import { ApiError, sendError } from '../_lib/errors';
+import { emailListQuerySchema, EmailListQuery } from '../_lib/validations';
 
 /**
  * GET /api/emails

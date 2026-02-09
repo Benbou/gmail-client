@@ -1,10 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { z } from 'zod';
-import { supabase } from '../lib/supabase';
-import { authenticate } from '../lib/auth';
-import { ApiError, sendError } from '../lib/errors';
-import { emailUpdateSchema, EmailUpdateBody } from '../lib/validations';
-import { gmailService } from '../services/gmail-service';
+import { supabase } from '../_lib/supabase';
+import { authenticate } from '../_lib/auth';
+import { ApiError, sendError } from '../_lib/errors';
+import { emailUpdateSchema, EmailUpdateBody } from '../_lib/validations';
+import { gmailService } from '../_services/gmail-service';
 
 /**
  * GET/PATCH/DELETE /api/emails/[id]

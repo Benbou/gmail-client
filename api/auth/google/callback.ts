@@ -1,9 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabase } from '../../lib/supabase';
-import { getTokensFromCode, getUserEmail } from '../../lib/gmail-oauth';
-import { encrypt } from '../../lib/crypto';
-import { getOAuthState, deleteOAuthState } from '../../lib/redis';
-import { gmailSyncService } from '../../services/gmail-sync';
+import { supabase } from '../../_lib/supabase';
+import { getTokensFromCode, getUserEmail } from '../../_lib/gmail-oauth';
+import { encrypt } from '../../_lib/crypto';
+import { getOAuthState, deleteOAuthState } from '../../_lib/redis';
+import { gmailSyncService } from '../../_services/gmail-sync';
 
 /**
  * GET /api/auth/google/callback
