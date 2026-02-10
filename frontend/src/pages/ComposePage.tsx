@@ -73,6 +73,7 @@ export default function ComposePage() {
     const replyTo = searchParams.get('reply');
     const forwardId = searchParams.get('forward');
     const draftId = searchParams.get('draft');
+    const replyAccountId = searchParams.get('account');
 
     const [showCc, setShowCc] = useState(false);
     const [showBcc, setShowBcc] = useState(false);
@@ -96,13 +97,13 @@ export default function ComposePage() {
 
     // Fetch original email if replying or forwarding
     const { data: originalEmail } = useQuery({
-        queryKey: ['email', replyTo || forwardId],
+        queryKey: ['email', replyTo || forwardId, replyAccountId],
         queryFn: async () => {
             const id = replyTo || forwardId;
-            const response = await emailsApi.get(id!);
+            const response = await emailsApi.get(id!, replyAccountId!);
             return response.data;
         },
-        enabled: !!(replyTo || forwardId),
+        enabled: !!(replyTo || forwardId) && !!replyAccountId,
     });
 
     // Fetch draft if editing
@@ -230,30 +231,6 @@ export default function ComposePage() {
         },
     });
 
-    // Schedule email mutation
-    const scheduleMutation = useMutation({
-        mutationFn: async ({ data, scheduledAt }: { data: ComposeFormData; scheduledAt: string }) => {
-            return emailsApi.schedule({
-                gmail_account_id: data.accountId,
-                to_emails: data.to,
-                cc_emails: data.cc || [],
-                bcc_emails: data.bcc || [],
-                subject: data.subject || '',
-                body_html: data.body,
-                scheduled_at: scheduledAt,
-                in_reply_to: replyTo || undefined,
-            });
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['emails'] });
-            toast.success('Email scheduled!');
-            navigate('/inbox');
-        },
-        onError: (error: any) => {
-            toast.error(error.response?.data?.error || 'Failed to schedule email');
-        },
-    });
-
     // Delete draft mutation
     const deleteDraftMutation = useMutation({
         mutationFn: async () => {
@@ -272,13 +249,11 @@ export default function ComposePage() {
         sendMutation.mutate(data);
     };
 
-    const handleSchedule = (hours: number) => {
-        const scheduledAt = new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
-        const data = form.getValues();
-        scheduleMutation.mutate({ data, scheduledAt });
+    const handleSchedule = (_hours: number) => {
+        toast.info('Schedule send coming soon');
     };
 
-    const isLoading = sendMutation.isPending || scheduleMutation.isPending;
+    const isLoading = sendMutation.isPending;
 
     return (
         <TooltipProvider delayDuration={0}>

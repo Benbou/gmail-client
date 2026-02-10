@@ -19,7 +19,6 @@ import {
 import { emailsApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccountStore } from '@/stores/accountStore';
-import { supabase } from '@/lib/supabase';
 import type { Email, EmailListParams } from '@/types';
 import EmailListItem from '@/components/email/EmailListItem';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -77,16 +76,12 @@ export default function InboxPage({ filter }: InboxPageProps) {
             order: 'desc',
         };
 
-        // Only filter by account if one is specifically selected
         if (selectedAccountId) {
             params.account_id = selectedAccountId;
         }
-        // When selectedAccountId is null, backend returns all accounts (unified inbox)
 
         switch (filter) {
             case 'sent':
-                // For sent emails, we'd filter by the sender being the user
-                // This requires backend support - for now just filter
                 params.label_id = 'SENT';
                 break;
             case 'starred':
@@ -103,17 +98,15 @@ export default function InboxPage({ filter }: InboxPageProps) {
                 params.label_id = 'TRASH';
                 break;
             case 'archived':
-                // All mail - no filters
                 break;
             default:
-                // Inbox - not archived
                 params.is_archived = false;
                 break;
         }
 
         if (labelId) {
             params.label_id = labelId;
-            params.is_archived = undefined; // Show all emails with this label
+            params.is_archived = undefined;
         }
 
         return params;
@@ -128,38 +121,72 @@ export default function InboxPage({ filter }: InboxPageProps) {
         },
     });
 
-    // Real-time subscription to email changes
+    // SSE subscription for real-time updates
     useEffect(() => {
         if (!user || accounts.length === 0) return;
 
-        const accountIds = accounts.map(a => a.id).join(',');
+        // Use native EventSource — auth is handled via cookie/same-origin
+        // For cross-origin with auth, you'd use @microsoft/fetch-event-source
+        const baseUrl = import.meta.env.VITE_API_URL || '';
+        const url = `${baseUrl}/api/events`;
 
-        const subscription = supabase
-            .channel(`emails-${user.id}`)
-            .on(
-                'postgres_changes',
-                {
-                    event: '*', // INSERT, UPDATE, DELETE
-                    schema: 'public',
-                    table: 'emails',
-                    filter: `gmail_account_id=in.(${accountIds})`
-                },
-                (payload) => {
-                    console.log('Email changed:', payload);
-                    // Invalidate queries to refetch
-                    queryClient.invalidateQueries({ queryKey: ['emails'] });
+        // We need to use fetch-based SSE for auth header support
+        let aborted = false;
+
+        async function connectSSE() {
+            try {
+                const { data: { session } } = await (await import('@/lib/supabase')).supabase.auth.getSession();
+                if (!session?.access_token || aborted) return;
+
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${session.access_token}`,
+                        'Accept': 'text/event-stream',
+                    },
+                });
+
+                if (!response.ok || !response.body || aborted) return;
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (!aborted) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const event = JSON.parse(line.slice(6));
+                                if (['messageNew', 'messageDeleted', 'messageUpdated'].includes(event.type)) {
+                                    queryClient.invalidateQueries({ queryKey: ['emails'] });
+                                }
+                            } catch {
+                                // ignore parse errors (heartbeats, etc.)
+                            }
+                        }
+                    }
                 }
-            )
-            .subscribe();
+            } catch {
+                // Connection lost, will retry on next mount
+            }
+        }
+
+        connectSSE();
 
         return () => {
-            subscription.unsubscribe();
+            aborted = true;
         };
     }, [user, accounts, queryClient]);
 
     // Archive mutation
     const archiveMutation = useMutation({
-        mutationFn: (emailId: string) => emailsApi.archive(emailId),
+        mutationFn: (email: Email) => emailsApi.archive(email.id, email.gmail_account_id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['emails'] });
             toast.success('Email archived');
@@ -171,8 +198,8 @@ export default function InboxPage({ filter }: InboxPageProps) {
 
     // Mark read mutation
     const markReadMutation = useMutation({
-        mutationFn: ({ emailId, is_read }: { emailId: string; is_read: boolean }) =>
-            emailsApi.update(emailId, { is_read }),
+        mutationFn: ({ email, is_read }: { email: Email; is_read: boolean }) =>
+            emailsApi.markRead(email.id, email.gmail_account_id, is_read),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['emails'] });
         },
@@ -180,7 +207,7 @@ export default function InboxPage({ filter }: InboxPageProps) {
 
     // Delete mutation
     const deleteMutation = useMutation({
-        mutationFn: (emailId: string) => emailsApi.delete(emailId),
+        mutationFn: (email: Email) => emailsApi.trash(email.id, email.gmail_account_id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['emails'] });
             toast.success('Email deleted');
@@ -202,7 +229,7 @@ export default function InboxPage({ filter }: InboxPageProps) {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <Button onClick={() => connectGmail()} className="w-full">
+                        <Button onClick={() => connectGmail()} className="w-full bg-foreground text-background hover:bg-foreground/90">
                             <Mail className="h-4 w-4 mr-2" />
                             Connect Gmail
                         </Button>
@@ -309,14 +336,14 @@ export default function InboxPage({ filter }: InboxPageProps) {
                             <EmailListItem
                                 key={email.id}
                                 email={email}
-                                onArchive={() => archiveMutation.mutate(email.id)}
+                                onArchive={() => archiveMutation.mutate(email)}
                                 onToggleRead={() =>
                                     markReadMutation.mutate({
-                                        emailId: email.id,
+                                        email,
                                         is_read: !email.is_read,
                                     })
                                 }
-                                onDelete={() => deleteMutation.mutate(email.id)}
+                                onDelete={() => deleteMutation.mutate(email)}
                             />
                         ))}
                     </div>

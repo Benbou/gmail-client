@@ -87,7 +87,7 @@ export default function Sidebar({ isCollapsed }: SidebarProps) {
 
     return (
         <TooltipProvider delayDuration={0}>
-            <div className={cn("flex flex-col h-full bg-sidebar border-sidebar-border transition-all duration-300", isCollapsed ? "w-[52px]" : "w-64")}>
+            <div className={cn("flex flex-col h-full bg-sidebar border-r border-sidebar-border transition-all duration-300", isCollapsed ? "w-[52px]" : "w-64")}>
                 {/* Account Switcher */}
                 <div className={cn("p-4 border-b border-sidebar-border", isCollapsed ? "px-2" : "px-4")}>
                     <AccountSwitcher isCollapsed={isCollapsed} />
@@ -97,7 +97,7 @@ export default function Sidebar({ isCollapsed }: SidebarProps) {
                 <div className={cn("p-4", isCollapsed ? "px-2" : "px-4")}>
                     <Button
                         className={cn(
-                            "shadow-md transition-all duration-300",
+                            "bg-foreground text-background hover:bg-foreground/90 shadow-md transition-all duration-300",
                             isCollapsed ? "h-12 w-12 rounded-full p-0" : "h-14 w-36 rounded-2xl justify-start px-4 gap-3"
                         )}
                         size={isCollapsed ? "icon" : "lg"}

@@ -12,9 +12,9 @@ export interface GmailAccount {
     id: string;
     user_id: string;
     email: string;
+    emailengine_account_id?: string;
     is_active: boolean;
-    sync_enabled: boolean;
-    last_sync_at?: string;
+    sync_status?: string; // connected, connecting, authenticationError, disconnected
     created_at: string;
     updated_at: string;
 }
@@ -44,7 +44,7 @@ export interface Email {
     updated_at: string;
     gmail_accounts?: {
         email?: string;
-        account_email?: string; // Backend uses 'account_email' alias
+        account_email?: string;
     };
 }
 
@@ -93,18 +93,6 @@ export interface Draft {
     last_saved_at: string;
     created_at: string;
     updated_at: string;
-}
-
-export interface SyncLog {
-    id: string;
-    gmail_account_id: string;
-    sync_type: 'full' | 'delta';
-    started_at: string;
-    completed_at?: string;
-    status: 'running' | 'success' | 'failed';
-    emails_synced: number;
-    errors?: any[];
-    created_at: string;
 }
 
 export interface EmailListParams {

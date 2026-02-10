@@ -22,27 +22,28 @@ import DOMPurify from 'dompurify';
 
 interface EmailDetailPanelProps {
   emailId: string;
+  accountId: string;
   onClose: () => void;
 }
 
-export default function EmailDetailPanel({ emailId, onClose }: EmailDetailPanelProps) {
+export default function EmailDetailPanel({ emailId, accountId, onClose }: EmailDetailPanelProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['email', emailId],
+    queryKey: ['email', emailId, accountId],
     queryFn: async () => {
-      const response = await emailsApi.get(emailId);
+      const response = await emailsApi.get(emailId, accountId);
       return response.data;
     },
-    enabled: !!emailId,
+    enabled: !!emailId && !!accountId,
   });
 
   const email = data;
 
   // Mark as read when viewing
   const markReadMutation = useMutation({
-    mutationFn: (isRead: boolean) => emailsApi.update(emailId, { is_read: isRead }),
+    mutationFn: (isRead: boolean) => emailsApi.markRead(emailId, accountId, isRead),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['email', emailId] });
       queryClient.invalidateQueries({ queryKey: ['emails'] });
@@ -57,7 +58,7 @@ export default function EmailDetailPanel({ emailId, onClose }: EmailDetailPanelP
   }, [email?.id, email?.is_read]);
 
   const starMutation = useMutation({
-    mutationFn: (isStarred: boolean) => emailsApi.update(emailId, { is_starred: isStarred }),
+    mutationFn: (isStarred: boolean) => emailsApi.star(emailId, accountId, isStarred),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['email', emailId] });
       queryClient.invalidateQueries({ queryKey: ['emails'] });
@@ -66,7 +67,7 @@ export default function EmailDetailPanel({ emailId, onClose }: EmailDetailPanelP
   });
 
   const archiveMutation = useMutation({
-    mutationFn: () => emailsApi.archive(emailId),
+    mutationFn: () => emailsApi.archive(emailId, accountId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['emails'] });
       toast.success('Email archived');
@@ -78,7 +79,7 @@ export default function EmailDetailPanel({ emailId, onClose }: EmailDetailPanelP
   });
 
   const deleteMutation = useMutation({
-    mutationFn: () => emailsApi.delete(emailId),
+    mutationFn: () => emailsApi.trash(emailId, accountId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['emails'] });
       toast.success('Email deleted');
@@ -90,7 +91,7 @@ export default function EmailDetailPanel({ emailId, onClose }: EmailDetailPanelP
   });
 
   const snoozeMutation = useMutation({
-    mutationFn: (until: string) => emailsApi.snooze(emailId, until),
+    mutationFn: (until: string) => emailsApi.snooze(emailId, accountId, until),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['emails'] });
       toast.success('Email snoozed');
@@ -353,11 +354,11 @@ export default function EmailDetailPanel({ emailId, onClose }: EmailDetailPanelP
         {/* Reply/Forward actions */}
         <div className="p-4 border-t shrink-0">
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate(`/compose?reply=${emailId}`)}>
+            <Button variant="outline" onClick={() => navigate(`/compose?reply=${emailId}&account=${accountId}`)}>
               <Reply className="h-4 w-4 mr-2" />
               Reply
             </Button>
-            <Button variant="outline" onClick={() => navigate(`/compose?forward=${emailId}`)}>
+            <Button variant="outline" onClick={() => navigate(`/compose?forward=${emailId}&account=${accountId}`)}>
               <Forward className="h-4 w-4 mr-2" />
               Forward
             </Button>

@@ -34,10 +34,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         try {
-            // Get user from Supabase session
             const supabaseUser = supabaseSession.user;
 
-            // Check if user exists in our database
             const { data: existingUser, error: fetchError } = await supabase
                 .from('users')
                 .select('*')
@@ -45,15 +43,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 .single();
 
             if (fetchError && fetchError.code !== 'PGRST116') {
-                // PGRST116 = not found, other errors are real problems
                 console.error('Error fetching user:', fetchError);
             }
 
             if (existingUser) {
-                // User exists, use it
                 setUser(existingUser);
             } else {
-                // Create new user record
                 const newUser: Partial<User> = {
                     id: supabaseUser.id,
                     email: supabaseUser.email!,
@@ -87,7 +82,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             initializeUser(currentSession);
         });
 
-        // Listen for auth changes
         const {
             data: { subscription },
         } = supabase.auth.onAuthStateChange((_event, newSession) => {
@@ -128,7 +122,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!user) throw new Error('User not authenticated');
         try {
             const response = await authApi.startGoogleAuth(user.id);
-            // The API returns an OAuth URL - redirect to it
             if (response.data.authUrl) {
                 window.location.href = response.data.authUrl;
             }

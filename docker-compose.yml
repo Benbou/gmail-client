@@ -1,0 +1,43 @@
+services:
+  emailengine:
+    image: postalsys/emailengine:v2
+    restart: unless-stopped
+    volumes:
+      - emailengine_data:/data
+    environment:
+      # EmailEngine stores config in /data (LevelDB)
+      EENGINE_PORT: "3000"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      args:
+        VITE_API_URL: ""
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8080}:8080"
+    environment:
+      PORT: "8080"
+      EMAILENGINE_URL: http://emailengine:3000
+      EMAILENGINE_TOKEN: ${EMAILENGINE_TOKEN}
+      EMAILENGINE_GMAIL_APP_ID: ${EMAILENGINE_GMAIL_APP_ID:-}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:-}
+      NODE_ENV: production
+    depends_on:
+      emailengine:
+        condition: service_healthy
+
+volumes:
+  emailengine_data:

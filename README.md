@@ -1,332 +1,182 @@
-# Gmail Client MVP
+# Gmail Client
 
 Gmail client with unified inbox, multi-account support, and real-time sync.
 
-**Live Demo**: https://gmail-client.vercel.app
+---
+
+## Features
+
+- Multi-account Gmail (2+ accounts via OAuth2)
+- Unified inbox (merge emails by date)
+- Email actions: compose, reply, forward, archive, delete, star, snooze
+- Full-text search
+- Real-time updates (SSE)
+- Dark mode
+- Rich text editor (Tiptap)
 
 ---
 
-## 🎯 Features
+## Stack
 
-- ✅ **Multi-account Gmail** (2+ accounts via OAuth2)
-- ✅ **Unified inbox** (merge emails by date)
-- ✅ **Email actions**: compose, reply, forward, archive, delete, star, snooze
-- ✅ **Full-text search**
-- ✅ **Real-time sync** (auto-sync every 2 minutes)
-- ✅ **Dark mode**
-- ✅ **Rich text editor** (Tiptap)
+- **Express 5** (Node 20) - API server + static frontend
+- **EmailEngine v2** - Email sync, OAuth tokens, IMAP
+- **Supabase** - PostgreSQL + Auth
+- **React 19** + Vite + Tailwind CSS 3 + Shadcn UI
+- **Docker Compose** - Orchestration (app + emailengine)
 
 ---
 
-## 🏗️ Stack (2 Services)
+## Quick Start
 
-**100% Free Tier**
+### 1. Prerequisites
 
-- ☁️ **Vercel**: Frontend (React) + API (Serverless Functions)
-- 🗄️ **Supabase**: PostgreSQL + Auth + Realtime + pg_cron
+- Docker + Docker Compose
+- Supabase project (free tier)
+- Google Cloud OAuth 2.0 credentials (Gmail API enabled)
 
-### Frontend
-- React 19 + TypeScript + Vite
-- Tailwind CSS 4 + Shadcn UI
-- React Query + Zustand
-- Tiptap (rich text editor)
+### 2. Supabase Setup
 
-### Backend
-- Node 20 + TypeScript
-- Vercel Serverless Functions (≤12 routes)
-- Gmail API (googleapis)
-- Supabase PostgreSQL
-- JWT auth (AES-256-GCM encryption)
+1. Create a [Supabase project](https://supabase.com)
+2. Run migrations in SQL Editor:
+   - `supabase/migrations/20250122_001_initial_schema.sql`
+   - `supabase/migrations/20250122_002_rls_policies.sql`
+   - `supabase/migrations/20260210_001_emailengine_migration.sql`
 
----
+### 3. Environment Variables
 
-## 🚀 Quick Start
-
-### 1. Supabase Setup
-
-1. Create a [Supabase project](https://supabase.com) (free tier)
-2. Copy/paste SQL from `supabase/migrations/` in SQL Editor:
-   - `20260209145637_initial_schema.sql`
-   - `20260209145657_rls_policies.sql`
-   - `20260209_001_setup_cron_jobs.sql`
-3. **Generate API Secret**:
-   - Dashboard → Settings → API → "API Secrets" section
-   - Click "Generate new secret"
-   - Copy the secret (starts with `sb_secret_...`)
-
-### 2. Google OAuth Setup
-
-1. Go to [Google Cloud Console](https://console.cloud.google.com)
-2. Create project → Enable Gmail API
-3. OAuth consent screen → Configure
-4. Create OAuth 2.0 credentials
-5. Add redirect URI: `https://gmail-client.vercel.app/api/auth/google/callback`
-6. Save Client ID + Client Secret
-
-### 3. Local Development
-
-```bash
-# Install dependencies
-npm install --prefix frontend
-npm install --prefix api
-
-# Configure environment
-cd api
-cp .env.example .env
-# Edit .env with your Supabase URL, API Secret, Google credentials
-
-# Run dev server
-cd ../frontend
-npm run dev
-# Opens http://localhost:5173
-```
-
-### 4. Deploy to Vercel
-
-```bash
-./deploy-vercel.sh
-```
-
-The script will prompt for:
-- Supabase URL
-- Supabase API Secret (from step 1)
-- Google Client ID + Secret (from step 2)
-
-Everything else is auto-configured.
-
----
-
-## 📁 Project Structure
-
-```
-/
-├── frontend/              # React app
-│   ├── src/
-│   │   ├── components/ui/ # Shadcn UI components
-│   │   ├── lib/api.ts     # Axios client
-│   │   └── contexts/      # Auth, theme
-│   └── vite.config.ts
-│
-├── api/                   # Vercel serverless functions
-│   ├── lib/
-│   │   ├── auth.ts        # JWT validation
-│   │   ├── supabase.ts    # DB client
-│   │   └── crypto.ts      # Token encryption
-│   ├── services/
-│   │   ├── gmail-service.ts
-│   │   └── gmail-sync.ts
-│   └── [routes]/          # API endpoints
-│
-├── supabase/migrations/   # Database schema + cron
-│   ├── 20260209145637_initial_schema.sql
-│   ├── 20260209145657_rls_policies.sql
-│   └── 20260209_001_setup_cron_jobs.sql
-│
-├── vercel.json            # Vercel config
-├── deploy-vercel.sh       # Automated deployment
-├── CLAUDE.md              # AI assistant instructions
-└── README.md              # This file
-```
-
----
-
-## 🔐 Environment Variables
-
-### Frontend (`.env` in `/frontend`)
-
-```bash
-VITE_API_URL=/api
-VITE_SUPABASE_URL=https://lfhmxxwcvcvslzndemzh.supabase.co
-VITE_SUPABASE_ANON_KEY=sb_publishable_SQU74g27iA9mpU3VuFpgXA_EUuNLiwq
-```
-
-### Backend (`.env` in `/api`)
+Create `.env` at the project root:
 
 ```bash
 # Supabase
-SUPABASE_URL=https://lfhmxxwcvcvslzndemzh.supabase.co
-SUPABASE_SERVICE_KEY=sb_secret_...  # From Supabase Dashboard → API → API Secrets
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_KEY=sb_secret_...
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=sb_publishable_...
 
-# Google OAuth
-GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=your-client-secret
-GOOGLE_REDIRECT_URI=https://gmail-client.vercel.app/api/auth/google/callback
+# EmailEngine (set after first deploy, see below)
+EMAILENGINE_TOKEN=
+EMAILENGINE_GMAIL_APP_ID=
 
-# Security (generate with: openssl rand -base64 32)
-ENCRYPTION_KEY=<hex key for AES-256-GCM>
-JWT_SECRET=<secret for access tokens>
-JWT_REFRESH_SECRET=<secret for refresh tokens>
-CRON_SECRET=WdaG0F+LKui7hRqv+q2Eqtpc1IhdNYrWGNhe2UsjX4Y=
-
-# App config
-FRONTEND_URL=https://gmail-client.vercel.app
-NODE_ENV=production
-LOG_LEVEL=info
-USE_MEMORY_FALLBACK=true
+# App
+FRONTEND_URL=http://localhost:8080
+PORT=8080
 ```
 
-**⚠️ Never commit secrets to Git!**
-
----
-
-## 🛣️ API Routes
-
-**Auth**
-- `POST /api/auth/signup`
-- `POST /api/auth/login`
-- `POST /api/auth/refresh`
-- `GET /api/auth/google/start`
-- `GET /api/auth/google/callback`
-
-**Accounts**
-- `GET /api/accounts`
-- `DELETE /api/accounts/:id`
-- `POST /api/accounts/:id/sync`
-
-**Emails**
-- `GET /api/emails` (supports `?account_id=`)
-- `GET /api/emails/:id`
-- `POST /api/emails/send`
-- `PATCH /api/emails/:id/archive`
-- `PATCH /api/emails/:id/snooze`
-
-**Sync**
-- `GET /api/sync/:accountId`
-- `GET /api/sync/status/:accountId`
-
----
-
-## 🔄 Automated Tasks (Supabase pg_cron)
-
-Configured via `supabase/migrations/20260209_001_setup_cron_jobs.sql`:
-
-- **Email sync**: Every 2 minutes
-- **Token refresh**: Every 5 minutes
-- **Scheduled actions**: Every minute (snooze, send later)
-
-Cron jobs call Vercel API endpoints with `Authorization: Bearer CRON_SECRET`.
-
----
-
-## 🗄️ Database Schema
-
-**Tables**:
-- `users`: User accounts (email, password)
-- `gmail_accounts`: Connected Gmail accounts (encrypted OAuth tokens)
-- `emails`: Email metadata + content
-- `labels`: Gmail labels/folders
-- `sync_logs`: Sync history
-
-**Security**: Row-Level Security (RLS) enabled on all tables. Service role bypasses RLS for backend operations.
-
----
-
-## 🧪 Testing
+### 4. Run
 
 ```bash
-# Frontend tests
-cd frontend
-npm run test
+docker compose up --build
+```
 
-# API tests
-cd api
-npm run test
+App runs at `http://localhost:8080`. EmailEngine dashboard at `http://localhost:3000`.
+
+### 5. EmailEngine First-Time Setup
+
+1. Open EmailEngine dashboard (`http://localhost:3000`)
+2. Create admin password
+3. **API Token**: Settings > API Tokens > Create Token (full access) > set as `EMAILENGINE_TOKEN`
+4. **OAuth App**: Settings > OAuth2 Applications > Add Application
+   - Provider: Gmail
+   - Client ID / Secret: your Google OAuth credentials
+   - Save > copy App ID > set as `EMAILENGINE_GMAIL_APP_ID`
+5. **Webhooks**: Settings > Webhooks
+   - URL: `http://app:8080/api/webhooks/emailengine`
+   - Events: `messageNew`, `messageDeleted`, `messageUpdated`, `accountInitialized`
+6. Restart: `docker compose up --build`
+
+---
+
+## Project Structure
+
+```
+/
+├── frontend/          # React app
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── layout/        # AppLayout, Sidebar, MailView, TopBar
+│   │   │   ├── email/         # EmailListItem, EmailDetailPanel
+│   │   │   └── ui/            # Shadcn components
+│   │   ├── lib/api.ts         # Axios client
+│   │   ├── contexts/          # Auth context
+│   │   └── pages/             # InboxPage, ComposePage, SettingsPage
+│   └── vite.config.ts
+│
+├── server/            # Express server
+│   └── src/
+│       ├── index.ts           # App entry (serves frontend + API)
+│       ├── routes/            # API endpoints
+│       ├── adapters/          # EmailEngine → frontend format
+│       ├── lib/               # Supabase + EmailEngine clients
+│       ├── middleware/        # Auth + error handler
+│       ├── realtime/          # SSE push
+│       └── services/          # Snooze worker
+│
+├── supabase/migrations/
+├── Dockerfile
+├── docker-compose.yml
+└── CLAUDE.md
 ```
 
 ---
 
-## 🐛 Troubleshooting
-
-**404 after deploy**
-- Wait 2-3 minutes for CDN propagation
-- Hard refresh (Cmd+Shift+R)
-
-**OAuth fails**
-- Check `GOOGLE_REDIRECT_URI` matches exactly in Google Console
-- Verify domain is added to authorized redirect URIs
-
-**Emails not syncing**
-- Check cron jobs in Supabase SQL Editor:
-  ```sql
-  SELECT * FROM cron.job_run_details ORDER BY start_time DESC LIMIT 10;
-  ```
-- Verify `CRON_SECRET` matches in Vercel env vars
-
-**"Legacy API keys disabled" error**
-- You're using old `service_role` key instead of new API Secret
-- Generate new secret: Supabase Dashboard → Settings → API → "API Secrets"
-
----
-
-## 📝 Development Workflow
+## Development
 
 ```bash
-# Pull latest changes
-git pull origin main
+# Frontend (hot reload)
+cd frontend && npm run dev
 
-# Make changes...
+# Server (watch mode)
+cd server && npm run dev
 
-# Commit
-git add -A
-git commit -m "feat: description
-
-Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
-
-# Push
-git push origin main
+# EmailEngine (requires Docker)
+docker run -p 3000:3000 -v emailengine_data:/data postalsys/emailengine:v2
 ```
 
-**Commit types**: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`
+Frontend dev server expects the Express server at `http://localhost:8080` (configure `VITE_API_URL` in `frontend/.env`).
 
 ---
 
-## 📚 Documentation
+## Database
 
-- **CLAUDE.md**: Instructions for AI assistant (detailed architecture)
-- **deploy-vercel.sh**: Automated deployment script
+**Tables**: `users`, `gmail_accounts`, `scheduled_actions`, `drafts`
 
----
-
-## 🎨 UI Design
-
-Based on [Shadcn Mail example](https://v3.shadcn.com/examples/mail):
-
-- 3-panel layout (accounts/folders | email list | email detail)
-- Resizable panels
-- Dark mode support
-- Keyboard shortcuts (planned)
+Emails are NOT stored locally. They are fetched on-demand from EmailEngine.
 
 ---
 
-## 📊 Deployment Status
+## API Routes
 
-**Current**: ✅ Deployed to Vercel
-**URL**: https://gmail-client.vercel.app
-**Functions**: 10/12 (under Hobby plan limit)
-**Database**: Supabase (free tier)
-**Cost**: $0/month
-
----
-
-## 🔮 Roadmap
-
-**Phase 2**:
-- Email threading
-- Keyboard shortcuts
-- Scheduled send (deferred for MVP)
-- Draft auto-save
-
-**Phase 3**:
-- AI smart filters
-- Templates
-- Analytics dashboard
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /api/auth/google/start | Start OAuth flow |
+| GET | /api/accounts | List connected accounts |
+| DELETE | /api/accounts/:id | Disconnect account |
+| GET | /api/emails | List emails |
+| GET | /api/emails/:id | Get email detail |
+| POST | /api/emails/send | Send email |
+| POST | /api/emails/:id/archive | Archive |
+| POST | /api/emails/:id/star | Star/unstar |
+| POST | /api/emails/:id/read | Mark read/unread |
+| POST | /api/emails/:id/trash | Trash |
+| POST | /api/emails/:id/snooze | Snooze |
+| GET | /api/labels | List labels |
+| POST | /api/search | Search emails |
+| GET | /api/events | SSE stream |
+| POST | /api/webhooks/emailengine | EE webhook receiver |
 
 ---
 
-## 📄 License
+## Deployment (Coolify)
+
+1. Push to git
+2. Coolify builds via Dockerfile
+3. `docker-compose.yml` orchestrates app + emailengine
+4. Set env vars in Coolify dashboard
+5. Complete EmailEngine first-time setup (see above)
+6. Update Google OAuth redirect URI to your domain
+
+---
+
+## License
 
 MIT
-
----
-
-**Built with ❤️ using Claude Code**

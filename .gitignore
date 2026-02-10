@@ -44,9 +44,6 @@ tmp/
 # Supabase
 .supabase/
 
-# Redis
-dump.rdb
-
 # Claude
 .claude/
 

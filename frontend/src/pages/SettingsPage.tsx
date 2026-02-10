@@ -1,22 +1,17 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import {
     Mail,
-    RefreshCw,
     Trash2,
     Plus,
     Sun,
     Moon,
     Monitor,
     Loader2,
-    CheckCircle2,
-    XCircle,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { accountsApi, syncApi } from '@/lib/api';
 import { useTheme } from '@/components/ThemeProvider';
-import type { GmailAccount, SyncLog } from '@/types';
+import type { GmailAccount } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -50,9 +45,8 @@ export default function SettingsPage() {
                     <h1 className="text-2xl font-bold mb-6">Settings</h1>
 
                     <Tabs defaultValue="accounts" className="space-y-6">
-                        <TabsList className="grid w-full grid-cols-4">
+                        <TabsList className="grid w-full grid-cols-3">
                             <TabsTrigger value="accounts">Accounts</TabsTrigger>
-                            <TabsTrigger value="sync">Sync</TabsTrigger>
                             <TabsTrigger value="appearance">Appearance</TabsTrigger>
                             <TabsTrigger value="profile">Profile</TabsTrigger>
                         </TabsList>
@@ -63,7 +57,7 @@ export default function SettingsPage() {
                                 <CardHeader>
                                     <CardTitle>Connected Gmail Accounts</CardTitle>
                                     <CardDescription>
-                                        Manage your connected Gmail accounts
+                                        Manage your connected Gmail accounts. Sync is handled automatically.
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
@@ -91,21 +85,6 @@ export default function SettingsPage() {
                                     </Button>
                                 </CardContent>
                             </Card>
-                        </TabsContent>
-
-                        {/* Sync Tab */}
-                        <TabsContent value="sync" className="space-y-4">
-                            {accounts.map((account) => (
-                                <SyncCard key={account.id} account={account} />
-                            ))}
-
-                            {accounts.length === 0 && (
-                                <Card>
-                                    <CardContent className="py-6 text-center text-muted-foreground">
-                                        Connect a Gmail account to manage sync settings
-                                    </CardContent>
-                                </Card>
-                            )}
                         </TabsContent>
 
                         {/* Appearance Tab */}
@@ -218,35 +197,6 @@ export default function SettingsPage() {
                                 </CardContent>
                             </Card>
 
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Notification Email</CardTitle>
-                                    <CardDescription>
-                                        Where to send important notifications
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="notification-email">Notification Email</Label>
-                                        <Input
-                                            id="notification-email"
-                                            type="email"
-                                            defaultValue={user?.email || ''}
-                                            placeholder="notifications@example.com"
-                                        />
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <Label>Email notifications</Label>
-                                            <p className="text-sm text-muted-foreground">
-                                                Receive sync status updates
-                                            </p>
-                                        </div>
-                                        <Switch />
-                                    </div>
-                                </CardContent>
-                            </Card>
-
                             <Card className="border-destructive">
                                 <CardHeader>
                                     <CardTitle className="text-destructive">Danger Zone</CardTitle>
@@ -300,10 +250,20 @@ function AccountCard({ account, onDisconnect }: AccountCardProps) {
         try {
             await onDisconnect();
             toast.success('Account disconnected');
-        } catch (error) {
+        } catch {
             toast.error('Failed to disconnect account');
         } finally {
             setIsDisconnecting(false);
+        }
+    };
+
+    const statusBadge = () => {
+        if (!account.is_active) return <Badge variant="secondary" className="text-xs">Inactive</Badge>;
+        switch (account.sync_status) {
+            case 'connected': return <Badge variant="default" className="text-xs">Connected</Badge>;
+            case 'connecting': return <Badge variant="secondary" className="text-xs">Connecting...</Badge>;
+            case 'authenticationError': return <Badge variant="destructive" className="text-xs">Auth Error</Badge>;
+            default: return <Badge variant="default" className="text-xs">Active</Badge>;
         }
     };
 
@@ -316,14 +276,8 @@ function AccountCard({ account, onDisconnect }: AccountCardProps) {
                 <div>
                     <p className="font-medium">{account.email}</p>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        {account.is_active ? (
-                            <Badge variant="default" className="text-xs">Active</Badge>
-                        ) : (
-                            <Badge variant="secondary" className="text-xs">Inactive</Badge>
-                        )}
-                        {account.last_sync_at && (
-                            <span>Last synced: {format(new Date(account.last_sync_at), 'MMM d, h:mm a')}</span>
-                        )}
+                        {statusBadge()}
+                        <span>Connected {format(new Date(account.created_at), 'MMM d, yyyy')}</span>
                     </div>
                 </div>
             </div>
@@ -339,7 +293,7 @@ function AccountCard({ account, onDisconnect }: AccountCardProps) {
                         <AlertDialogTitle>Disconnect {account.email}?</AlertDialogTitle>
                         <AlertDialogDescription>
                             This will remove the Gmail account from your connected accounts.
-                            Your emails will no longer sync.
+                            Your emails will no longer be accessible.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -355,123 +309,6 @@ function AccountCard({ account, onDisconnect }: AccountCardProps) {
                 </AlertDialogContent>
             </AlertDialog>
         </div>
-    );
-}
-
-interface SyncCardProps {
-    account: GmailAccount;
-}
-
-function SyncCard({ account }: SyncCardProps) {
-    const queryClient = useQueryClient();
-
-    // Fetch sync logs
-    const { data: logsData } = useQuery({
-        queryKey: ['syncLogs', account.id],
-        queryFn: async () => {
-            const response = await syncApi.getLogs(account.id, 5);
-            return response.data;
-        },
-    });
-
-    // Toggle sync mutation
-    const toggleSyncMutation = useMutation({
-        mutationFn: (enabled: boolean) =>
-            accountsApi.update(account.id, { sync_enabled: enabled }),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['accounts'] });
-            toast.success('Sync settings updated');
-        },
-    });
-
-    // Trigger sync mutation
-    const triggerSyncMutation = useMutation({
-        mutationFn: () => syncApi.trigger(account.id, 'delta'),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['syncLogs', account.id] });
-            toast.success('Sync started');
-        },
-        onError: () => {
-            toast.error('Failed to start sync');
-        },
-    });
-
-    const logs: SyncLog[] = logsData?.logs || [];
-
-    return (
-        <Card>
-            <CardHeader>
-                <div className="flex items-center justify-between">
-                    <div>
-                        <CardTitle className="text-lg">{account.email}</CardTitle>
-                        <CardDescription>
-                            {account.sync_enabled ? 'Sync enabled' : 'Sync disabled'}
-                        </CardDescription>
-                    </div>
-                    <Switch
-                        checked={account.sync_enabled}
-                        onCheckedChange={(checked) => toggleSyncMutation.mutate(checked)}
-                        disabled={toggleSyncMutation.isPending}
-                    />
-                </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                    <div className="text-sm text-muted-foreground">
-                        {account.last_sync_at
-                            ? `Last synced: ${format(new Date(account.last_sync_at), 'MMM d, yyyy h:mm a')}`
-                            : 'Never synced'}
-                    </div>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => triggerSyncMutation.mutate()}
-                        disabled={triggerSyncMutation.isPending || !account.sync_enabled}
-                    >
-                        {triggerSyncMutation.isPending ? (
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
-                            <RefreshCw className="h-4 w-4 mr-2" />
-                        )}
-                        Sync Now
-                    </Button>
-                </div>
-
-                {logs.length > 0 && (
-                    <>
-                        <Separator />
-                        <div>
-                            <h4 className="text-sm font-medium mb-2">Recent Sync Activity</h4>
-                            <div className="space-y-2">
-                                {logs.map((log) => (
-                                    <div
-                                        key={log.id}
-                                        className="flex items-center justify-between text-sm py-2 border-b last:border-0"
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            {log.status === 'success' && (
-                                                <CheckCircle2 className="h-4 w-4 text-green-500" />
-                                            )}
-                                            {log.status === 'failed' && (
-                                                <XCircle className="h-4 w-4 text-destructive" />
-                                            )}
-                                            {log.status === 'running' && (
-                                                <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                                            )}
-                                            <span className="capitalize">{log.sync_type} sync</span>
-                                        </div>
-                                        <div className="flex items-center gap-4 text-muted-foreground">
-                                            <span>{log.emails_synced} emails</span>
-                                            <span>{format(new Date(log.started_at), 'h:mm a')}</span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </>
-                )}
-            </CardContent>
-        </Card>
     );
 }
 

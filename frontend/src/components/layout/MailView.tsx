@@ -7,16 +7,18 @@ export default function MailView() {
   const isMobile = useMediaQuery('(max-width: 768px)');
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedEmailId = searchParams.get('id');
+  const selectedAccountId = searchParams.get('account');
 
   const handleCloseEmail = () => {
     const newParams = new URLSearchParams(searchParams);
     newParams.delete('id');
+    newParams.delete('account');
     setSearchParams(newParams);
   };
 
   // Mobile: Show only detail when email selected
-  if (isMobile && selectedEmailId) {
-    return <EmailDetailPanel emailId={selectedEmailId} onClose={handleCloseEmail} />;
+  if (isMobile && selectedEmailId && selectedAccountId) {
+    return <EmailDetailPanel emailId={selectedEmailId} accountId={selectedAccountId} onClose={handleCloseEmail} />;
   }
 
   // Mobile: Show only list
@@ -33,11 +35,11 @@ export default function MailView() {
       </ResizablePanel>
 
       {/* Email Detail Panel (conditional) */}
-      {selectedEmailId && (
+      {selectedEmailId && selectedAccountId && (
         <>
           <ResizableHandle withHandle />
           <ResizablePanel defaultSize={60} minSize={40}>
-            <EmailDetailPanel emailId={selectedEmailId} onClose={handleCloseEmail} />
+            <EmailDetailPanel emailId={selectedEmailId} accountId={selectedAccountId} onClose={handleCloseEmail} />
           </ResizablePanel>
         </>
       )}

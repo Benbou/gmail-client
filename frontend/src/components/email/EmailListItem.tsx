@@ -43,6 +43,7 @@ export default function EmailListItem({
                 onClick={() => {
                     const newParams = new URLSearchParams(searchParams);
                     newParams.set('id', email.id);
+                    newParams.set('account', email.gmail_account_id);
                     setSearchParams(newParams);
                 }}
             >
