@@ -7,12 +7,6 @@ services:
     environment:
       # EmailEngine stores config in /data (LevelDB)
       EENGINE_PORT: "3000"
-    healthcheck:
-      test: ["CMD-SHELL", "node -e \"const http=require('http');const r=http.get('http://localhost:3000/',res=>{process.exit(res.statusCode<500?0:1)});r.on('error',()=>process.exit(1))\""]
-      interval: 10s
-      timeout: 10s
-      retries: 12
-      start_period: 40s
 
   app:
     build:
@@ -37,8 +31,7 @@ services:
       WEBHOOK_SECRET: ${WEBHOOK_SECRET:-}
       NODE_ENV: production
     depends_on:
-      emailengine:
-        condition: service_healthy
+      - emailengine
 
 volumes:
   emailengine_data:
