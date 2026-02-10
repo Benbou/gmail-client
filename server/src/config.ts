@@ -15,7 +15,7 @@ export const config = {
 
   // EmailEngine
   emailengineUrl: required('EMAILENGINE_URL'),
-  emailengineToken: required('EMAILENGINE_TOKEN'),
+  emailengineToken: optional('EMAILENGINE_TOKEN', ''),
   emailengineGmailAppId: optional('EMAILENGINE_GMAIL_APP_ID', ''),
 
   // Supabase
