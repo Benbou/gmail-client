@@ -34,6 +34,7 @@ WORKDIR /app
 # Copy server dist
 COPY --from=server-build /app/server/dist ./dist
 COPY --from=server-build /app/server/package.json ./
+COPY --from=server-build /app/server/package-lock.json ./
 
 # Install production dependencies only
 RUN npm ci --omit=dev
