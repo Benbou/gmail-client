@@ -8,6 +8,8 @@ services:
   emailengine:
     image: postalsys/emailengine:v2
     restart: unless-stopped
+    expose:
+      - "3000"
     volumes:
       - emailengine_data:/data
     environment:
