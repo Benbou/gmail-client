@@ -8,10 +8,11 @@ services:
       # EmailEngine stores config in /data (LevelDB)
       EENGINE_PORT: "3000"
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/health"]
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/v1/stats').then(r=>{if(!r.ok)throw 1}).catch(()=>process.exit(1))"]
       interval: 10s
-      timeout: 5s
-      retries: 5
+      timeout: 10s
+      retries: 10
+      start_period: 30s
 
   app:
     build:
