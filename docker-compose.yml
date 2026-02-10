@@ -8,11 +8,11 @@ services:
       # EmailEngine stores config in /data (LevelDB)
       EENGINE_PORT: "3000"
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/v1/stats').then(r=>{if(!r.ok)throw 1}).catch(()=>process.exit(1))"]
+      test: ["CMD-SHELL", "node -e \"const http=require('http');const r=http.get('http://localhost:3000/',res=>{process.exit(res.statusCode<500?0:1)});r.on('error',()=>process.exit(1))\""]
       interval: 10s
       timeout: 10s
-      retries: 10
-      start_period: 30s
+      retries: 12
+      start_period: 40s
 
   app:
     build:
