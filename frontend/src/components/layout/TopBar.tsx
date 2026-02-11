@@ -1,59 +1,30 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Menu, HelpCircle, Settings, Grip, Sun, Moon, Command } from 'lucide-react';
+import { Search, HelpCircle, Settings, Sun, Moon, Command } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
-import { useAuth } from '@/contexts/AuthContext';
 import CommandPalette from '@/components/CommandPalette';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { SidebarTrigger } from "@/components/ui/sidebar"
+import { Separator } from "@/components/ui/separator"
 
-interface TopBarProps {
-    onMenuClick: () => void
-}
-
-export default function TopBar({ onMenuClick }: TopBarProps) {
+export default function TopBar() {
     const navigate = useNavigate();
     const { theme, setTheme } = useTheme();
-    const { user, logout } = useAuth();
     const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
     const toggleTheme = () => {
         setTheme(theme === 'dark' ? 'light' : 'dark');
     };
 
-    const getInitials = (name?: string, email?: string) => {
-        if (name) {
-            return name
-                .split(' ')
-                .map((n) => n[0])
-                .join('')
-                .toUpperCase()
-                .slice(0, 2);
-        }
-        return email?.charAt(0).toUpperCase() || '?';
-    };
-
     return (
         <TooltipProvider delayDuration={0}>
-            <div className="h-16 border-b bg-background flex items-center justify-between px-4 gap-4">
-                {/* Left: Menu & Logo */}
-                <div className="flex items-center gap-3">
-                    <Button variant="ghost" size="icon" onClick={onMenuClick} className="shrink-0">
-                        <Menu className="h-5 w-5" />
-                    </Button>
-                    <div className="flex items-center gap-2">
-                        <span className="text-xl font-bold">Gmail</span>
-                    </div>
+            <header className="sticky top-0 flex shrink-0 items-center justify-between border-b bg-background px-4 h-14 gap-4">
+                {/* Left: Sidebar trigger */}
+                <div className="flex items-center gap-2">
+                    <SidebarTrigger className="-ml-1" />
+                    <Separator orientation="vertical" className="mr-2 h-4" />
                 </div>
 
                 {/* Center: Search */}
@@ -74,7 +45,7 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
                     </div>
                 </div>
 
-                {/* Right: Actions & Profile */}
+                {/* Right: Actions */}
                 <div className="flex items-center gap-1 shrink-0">
                     <Tooltip>
                         <TooltipTrigger asChild>
@@ -135,57 +106,10 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
                         </TooltipTrigger>
                         <TooltipContent>Settings</TooltipContent>
                     </Tooltip>
-
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="hidden sm:inline-flex">
-                                <Grip className="h-5 w-5 text-muted-foreground" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Google Apps</TooltipContent>
-                    </Tooltip>
-
-                    <div className="ml-2">
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Avatar className="h-8 w-8 cursor-pointer hover:ring-2 ring-offset-2 ring-primary transition-all">
-                                    <AvatarImage src={user?.avatar_url} />
-                                    <AvatarFallback>
-                                        {getInitials(user?.name, user?.email)}
-                                    </AvatarFallback>
-                                </Avatar>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-56">
-                                <DropdownMenuLabel>
-                                    <div className="flex flex-col space-y-1">
-                                        <p className="text-sm font-medium">{user?.name || 'User'}</p>
-                                        <p className="text-xs text-muted-foreground">{user?.email}</p>
-                                    </div>
-                                </DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => navigate('/settings')}>
-                                    <Settings className="mr-2 h-4 w-4" />
-                                    Settings
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={toggleTheme}>
-                                    {theme === 'dark' ? (
-                                        <Sun className="mr-2 h-4 w-4" />
-                                    ) : (
-                                        <Moon className="mr-2 h-4 w-4" />
-                                    )}
-                                    {theme === 'dark' ? 'Light mode' : 'Dark mode'}
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={logout}>
-                                    Sign out
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
                 </div>
 
                 <CommandPalette open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} />
-            </div>
+            </header>
         </TooltipProvider>
     );
 }
