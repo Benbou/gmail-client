@@ -33,7 +33,6 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar'
-import AccountSwitcher from './AccountSwitcher'
 
 const navItems = [
   { title: 'Inbox', url: '/inbox', icon: Inbox },
@@ -142,14 +141,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <div className="text-base font-medium text-foreground">
               {activeTitle}
             </div>
-            <Button variant="outline" size="sm" asChild>
-              <NavLink to="/compose" className="gap-1.5">
+            <Button variant="ghost" size="icon" asChild className="h-8 w-8">
+              <NavLink to="/compose">
                 <Plus className="h-4 w-4" />
-                Compose
               </NavLink>
             </Button>
           </div>
-          <AccountSwitcher />
         </SidebarHeader>
         <SidebarContent>
           <SidebarGroup>

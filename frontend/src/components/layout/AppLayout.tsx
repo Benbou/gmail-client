@@ -11,7 +11,7 @@ export default function AppLayout() {
         <SidebarProvider
             style={
                 {
-                    '--sidebar-width': '280px',
+                    '--sidebar-width': '350px',
                 } as React.CSSProperties
             }
         >
